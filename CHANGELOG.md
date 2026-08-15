@@ -26,7 +26,7 @@
 
 ### 修复
 
-- 预设行下宿主半注入策略：只 `inject: ['config']`，宿主服务改走 `ctx.get`（预设行硬注入宿主服务会被判为 row did not activate；读 `ctx.config` 必须声明 config 注入）
+- 预设行下宿主半的服务获取方式：硬注入 `['config', 'webServer']`（读 `ctx.config` 必须声明 config 注入；宿主服务要走 inject——standing scope 下 `ctx.get('webServer')` 实测取不到，会导致路由静默缺失，标准预设行 dsh-tool-bash 同样硬注入 shell 等宿主服务）
 - 安装位置误判：profile 启动的部署锚点是 `%USERPROFILE%\.dsh\profiles\web`（全局 npm 根不在其解析链上）
 - 视频窗口化时右侧/底部黑边（画布位图拉伸 → 视口像素一一对应 + cover 源裁剪）
 - 场景壁纸 `filepath` 缺失时无法回退缩略图
