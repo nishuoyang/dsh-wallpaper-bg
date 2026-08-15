@@ -24,33 +24,32 @@
 | 宿主半（Node） | `lib/host.js` | 注册同源路由：`/dsh-wallpaper-bg/asset`（本地文件流式代理，支持 Range）、`/dsh-wallpaper-bg/we`（WE API 只读代理，带缓存）、`/dsh-wallpaper-bg/health` |
 | 浏览器半 | `lib/client.js` | 单文件 client bundle（`window.__ModuleLoader__` 工厂形式），注入背景层与遮罩、注册设置面板「壁纸」选项卡 |
 
-两端零构建：`lib/client.js` 是手写的单文件 bundle，无需任何打包工具，`npm install -g` 后直接可用。
+两端零构建：`lib/client.js` 是手写的单文件 bundle，无需任何打包工具；另附 `dsh-wallpaper-bg` CLI（`install`/`status`/`uninstall`）完成一键安装。
 
 ## 安装
 
-DSH 的预设行按包名从 **harness 组合文件所在目录**向上走 `node_modules` 链解析（宿主半和浏览器半使用同一个锚点）。因此插件必须装在该锚点链上的某个 `node_modules` 里：
-
-- **profile 启动的部署**（`dsh web` 从 `%USERPROFILE%\.dsh\profiles\...` 启动，报错里会显示 `imported from C:\Users\...\.dsh\profiles\web\`）：装到 `%USERPROFILE%\.dsh\node_modules`。
-- **全局 npm 安装的部署**（报错里显示 `imported from ...\node_modules\@deepseek-ai\dsh\...`）：`npm install -g` 即可。
+### 方式一：一键 CLI（推荐）
 
 ```bash
-# 方式一：从 npm 安装（发布后；prefix 换成你的锚点上级目录）
-npm install --prefix %USERPROFILE%\.dsh dsh-wallpaper-bg
-
-# 方式二：从 GitHub 安装
-npm install --prefix %USERPROFILE%\.dsh github:<你的用户名>/dsh-wallpaper-bg
-
-# 方式三：本地克隆后安装（开发模式，junction 实时生效）
-New-Item -ItemType Junction -Path "$env:USERPROFILE\.dsh\node_modules\dsh-wallpaper-bg" `
-         -Target "<本仓库路径>"
+npm install -g dsh-wallpaper-bg     # 把 dsh-wallpaper-bg 命令装上 PATH（发布后；本地开发用 npm install -g <仓库路径>）
+dsh-wallpaper-bg install            # 自动完成全部安装，幂等可重跑
 ```
 
-> 拿不准锚点时，先加预设行再启动一次会话，把启动报错里的 `imported from <目录>` 抄出来，把插件装进该目录链上的 `node_modules` 即可。
+`install` 自动做三件事，全程无需手改文件：
 
-然后在你要使用的**预设**里加一行插件行。DSH 自带预设不可修改，请先复制一份：
+1. **解析链检查**：用与 DSH 一致的 ESM 方式探测插件包能否从 harness 锚点解析（DSH 的预设行按包名从组合文件目录向上走 `node_modules` 链解析，宿主半与浏览器半同一锚点）；
+2. 解析不到时在 `%USERPROFILE%\.dsh\node_modules` 建指向本包的 junction（Windows）/符号链接；
+3. **复制 `standard` 预设**为 `standard-wallpaper`（可 `--id` 指定）并追加壁纸插件行（带管理标记，`uninstall` 可干净移除）。
 
-1. 打开 DSH Web 界面，复制你常用的预设（如 `standard`）为新预设（例如 `standard-wallpaper`）；或直接手动复制部署自带预设目录到 `%USERPROFILE%\.dsh\.agent-presets\<新预设id>\` 并改写 `preset.yml`。
-2. 在该预设的 `agent.cordis.yml` 末尾追加：
+其它命令：`dsh-wallpaper-bg status`（查看安装状态）、`dsh-wallpaper-bg uninstall`（卸载）。之后重启 DSH，新建会话时选择该预设即可。
+
+### 方式二：官方 dsh 命令装包 + 手动加预设行
+
+```bash
+dsh plugin --profile web add dsh-wallpaper-bg    # 转发 pnpm 装进 profile（本地路径含空格会被参数转发拆断，请用裸包名）
+```
+
+DSH 自带预设不可修改，再手动复制一份预设（Web 界面复制，或把部署自带的 standard 目录复制到 `%USERPROFILE%\.dsh\.agent-presets\<新预设id>\` 并改写 `preset.yml`），在 `agent.cordis.yml` 末尾追加：
 
 ```yaml
 # ── 壁纸背景 ────────────────────────────────────────────────────────────────
@@ -61,10 +60,9 @@ New-Item -ItemType Junction -Path "$env:USERPROFILE\.dsh\node_modules\dsh-wallpa
     weBase: http://127.0.0.1:8088
 ```
 
-3. **重启 DSH**（插件表按包名缓存，新增插件需重启后进入 boot graph）。
-4. 新建会话时选择该预设。打开 **设置 → 壁纸** 即可切换与调节。
+最后 **重启 DSH**（新增插件行、插件包代码更新都需重启后生效：DSH 会缓存已导入的模块），新建会话时选择该预设，打开 **设置 → 壁纸** 即可。
 
-> 也可用仓库里的 `install-local.ps1` 完成第 1 步的本地安装（仍需手动添加预设行）。
+> 拿不准锚点时：先加预设行再启动一次会话，把报错里的 `imported from <目录>` 抄出来，把插件装进该目录链上的 `node_modules` 即可（CLI 的 status 会直接给出结论）。
 
 ## WE 壁纸库（可选组件）
 

@@ -4,6 +4,9 @@
   "description": "DeepSeek Harness 网页界面独立壁纸背景插件：内置壁纸 / 自定义上传 / Wallpaper Engine 壁纸库（只读）三种来源，支持图片、视频、场景预览渲染与遮罩·模糊·亮度·安全放大调节。",
   "type": "module",
   "main": "lib/host.js",
+  "bin": {
+    "dsh-wallpaper-bg": "bin/dsh-wallpaper-bg.js"
+  },
   "exports": {
     ".": "./lib/host.js",
     "./client": "./lib/client.js",
@@ -19,6 +22,7 @@
   "files": [
     "lib/host.js",
     "lib/client.js",
+    "bin/dsh-wallpaper-bg.js",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
