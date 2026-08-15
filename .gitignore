@@ -1,0 +1,7 @@
+node_modules/
+*.log
+we-api.log
+we-api.config
+.DS_Store
+*.tsbuildinfo
+.install-*.json

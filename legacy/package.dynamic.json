@@ -1,0 +1,26 @@
+{
+  "name": "dsh-wallpaper-bg",
+  "version": "1.0.0",
+  "description": "DSH Web UI 独立壁纸背景插件：内置壁纸库 / 自定义上传 / Wallpaper Engine 壁纸库三种来源，支持视频与场景壁纸渲染、遮罩/模糊/亮度调节",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "start": "node --experimental-strip-types src/index.ts"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "cordis",
+    "wallpaper-engine",
+    "wallpaper",
+    "background"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.6"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0"
+  }
+}
