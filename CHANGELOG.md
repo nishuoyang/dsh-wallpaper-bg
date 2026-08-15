@@ -9,7 +9,8 @@
 ### 新增
 
 - 静态双半包结构：宿主半 `lib/host.js` + 浏览器半 `lib/client.js`（单文件 bundle，零构建）
-- **`dsh-wallpaper-bg` CLI**：`install`（一键：ESM 权威解析探测 + 必要时建立 `.dsh\node_modules` 链接 + 复制 standard 预设并追加带标记的插件行）、`status`、`uninstall`
+- **`dsh-wallpaper-bg` CLI**：`install`（默认写入 profile 补丁层 `cordis.patch.yml`——启动即生效、热重载，无需会话/预设/重启；`--preset` 切按会话模式）、`status`、`uninstall`
+- **`dsh.bundle` 组合层**（`cordis.patch.yml`）：`dsh plugin --profile web add` 安装后作为 profile 层激活，首次加载页面即带背景
 - 宿主路由：`/dsh-wallpaper-bg/health`、`/dsh-wallpaper-bg/we`（WE API 只读代理，5 分钟列表 / 10 秒当前壁纸缓存）、`/dsh-wallpaper-bg/asset`（本地文件流式代理，支持 Range，大视频不再整读内存）
 - 三种壁纸来源：内置 10 张 Unsplash / 自定义上传（IndexedDB）/ WE 壁纸库（只读）
 - 三种渲染：图片、视频（canvas + 30 FPS 上限 + cover 裁剪无黑边）、场景（官方预览图回退，GIF 保持动画）
@@ -21,7 +22,7 @@
 
 ### 变更
 
-- 安装方式：推荐 `npm install -g dsh-wallpaper-bg` + `dsh-wallpaper-bg install` 一键完成；也支持官方 `dsh plugin --profile web add` 装包 + 手动预设行
+- 安装方式：默认 `dsh-wallpaper-bg install` 写入 profile 补丁层（host 平面常驻、启动即生效）；官方 `dsh plugin --profile web add`（发布后）或 `--preset` 按会话模式作为可选
 - 动态插件时代源码归档至 `legacy/`
 
 ### 修复

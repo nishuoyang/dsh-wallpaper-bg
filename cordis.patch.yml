@@ -1,0 +1,13 @@
+# dsh-wallpaper-bg — profile bundle patch layer
+# ===============================================
+# 由 dsh.bundle.patch 声明，经 `dsh plugin --profile web add dsh-wallpaper-bg`
+# 安装后作为 profile 组合层之一被应用；也可以直接把下面的 insert 块放进
+# 你自己的 profiles/<name>/cordis.patch.yml（用户自有补丁层，支持热重载）。
+#
+# 该行处于 host 平面：随 dsh web 启动即生效，页面首次加载就带壁纸背景，
+# 无需任何会话或预设。
+- insert:
+    - id: wallpaper-bg
+      name: dsh-wallpaper-bg
+      config:
+        weBase: http://127.0.0.1:8088

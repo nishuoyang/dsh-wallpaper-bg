@@ -17,12 +17,16 @@
       "platform": "web",
       "immediately": true,
       "inject": []
+    },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
     }
   },
   "files": [
     "lib/host.js",
     "lib/client.js",
     "bin/dsh-wallpaper-bg.js",
+    "cordis.patch.yml",
     "README.md",
     "LICENSE",
     "CHANGELOG.md"
