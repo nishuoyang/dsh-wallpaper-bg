@@ -2,6 +2,12 @@
 
 本文件记录 dsh-wallpaper-bg 的用户可见变更。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [0.2.1] - 2026-08-13
+
+### 修复
+
+- **深色外观下选中按钮文字消失**：来源切换按钮与筛选胶囊的激活态之前用固定 `#fff` 文字色；而 DSH 深色主题的品牌主色是近白色（`--dsw-alias-brand-primary` → bluish-50），导致白底白字。现在激活态文字改用配套的 `--dsw-alias-label-primary-inverted`（深色主题下为深色文字），深浅两种外观都保持清晰对比度。
+
 ## [0.2.0] - 2026-08-13
 
 ### 新增
