@@ -1,60 +1,73 @@
 # dsh-wallpaper-bg
 
-给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 网页界面添加**独立的动态壁纸背景**的静态插件（v0.2.1）。
+> v0.2.5 · MIT License
 
-背景层独立于桌面 Wallpaper Engine —— 在 DSH 里换壁纸不会动你的桌面壁纸，反之亦然。
+给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）网页界面加上一层**独立的动态壁纸背景**的静态双半插件：一条命令装好、刷新页面，整个界面的底层就变成一张会动的壁纸。内置 10 张 Unsplash 高清图，支持本地自定义图片 / 视频上传，还能只读接入本机 Wallpaper Engine 壁纸库——视频、场景（动图预览）、网页三类壁纸都能在浏览器里动起来；浅色外观自动铺半透明白雾、深色外观自动压暗遮罩，保证界面细字始终清晰。背景层与桌面 Wallpaper Engine 完全独立：在 DSH 里换壁纸不会动你的桌面壁纸，反之亦然。
+
+![暗色外观下的 DSH 界面](docs/screenshots/overview-dark.jpg)
+
+![设置面板 · 壁纸选项卡](docs/screenshots/settings-panel.jpg)
 
 ## 功能
 
 - **三种壁纸来源**
-  - **内置壁纸**：10 张 Unsplash 高清图
-  - **自定义上传**：本地图片 / 视频，存入 IndexedDB，刷新后保留
-  - **WE 壁纸库**：只读读取本机 Wallpaper Engine 已安装壁纸（默认 `http://127.0.0.1:8088`）
-- **四种渲染**：静态图片、视频（canvas 渲染、30 FPS 上限、cover 裁剪无黑边）、场景（官方预览图 / GIF 动画回退）、Web 壁纸（iframe 原生渲染 index.html）
-- **五项调节**：浅色雾层、深色遮罩（随主题自动切换）、背景模糊度、背景亮度、安全放大（0–10%，裁掉视频/图片自带的边缘黑边）
-- **同步桌面壁纸**开关：只读跟随 WE 当前桌面壁纸（30 秒轮询）
-- 设置持久化到 localStorage；界面表面自动半透明化以透出背景
-
-## 原理
-
-本包是 DSH **静态双半插件**，并作为 **profile 补丁层（bundle）**组合进 DSH 的 host 平面：
-
-| 半边 | 文件 | 职责 |
-| --- | --- | --- |
-| 宿主半（Node） | `lib/host.js` | 注册同源路由：`/dsh-wallpaper-bg/asset`（本地文件流式代理，支持 Range）、`/dsh-wallpaper-bg/we`（WE API 只读代理，带缓存）、`/dsh-wallpaper-bg/health` |
-| 浏览器半 | `lib/client.js` | 单文件 client bundle（`window.__ModuleLoader__` 工厂形式），注入背景层与遮罩、注册设置面板「壁纸」选项卡 |
-| 组合层 | `cordis.patch.yml` | `dsh.bundle` 补丁：把插件行插入 profile 组合的 host 平面，**随 `dsh web` 启动即生效**，首次加载页面就带背景 |
-
-两端零构建：`lib/client.js` 是手写的单文件 bundle，无需任何打包工具；另附 `dsh-wallpaper-bg` CLI（`install`/`status`/`uninstall`）完成一键安装。
+  - **内置壁纸**：10 张 Unsplash 高清图，即装即用，无需任何本地服务；
+  - **自定义上传**：本地图片 / 视频，存入 IndexedDB，刷新后保留；
+  - **WE 壁纸库**：只读接入本机 Wallpaper Engine 已安装壁纸（默认 `http://127.0.0.1:8088`），并按 Steam 真实订阅清单过滤——在 WE 里退订的壁纸不会残留。
+- **四种渲染**
+  - 静态图片（cover 铺满）；
+  - 视频（canvas 渲染、30 FPS 上限、无黑边无变形）；
+  - 场景（WE 官方预览：有 `preview.gif` 就全屏循环动画，只有 `preview.jpg` 就静态展示）；
+  - 网页（web 类型壁纸 iframe 原生渲染 `index.html`，浏览器里真跑起来）。
+- **五项调节**：浅色雾层 / 深色遮罩（随 DSH 主题自动切换）、背景模糊度（0–20px）、背景亮度（50–150%）、安全放大（0–10%，裁掉边缘黑边）。
+- **同步桌面壁纸**开关：只读跟随 WE 当前桌面壁纸（30 秒轮询）。
+- WE 库内筛选：类型（全部 / 视频 / 场景 / 网页）+ 分级（非18+ / 18+，18+ 卡片带红色角标，实时显示计数）。
+- 设置持久化到 localStorage；界面表面自动半透明化以透出背景。
 
 ## 安装
 
-### 方式一：一键 CLI
+### 前提条件
+
+- Windows / macOS / Linux，Node.js ≥ 20（`node -v` 检查）；
+- 已装好 DeepSeek Harness，且能用 `dsh web` 正常启动网页界面；
+- 仅「WE 壁纸库」来源需要 Windows + 本机 Wallpaper Engine（可选组件，见下文）。
+
+### 方式一：CLI 一键安装（推荐）
 
 ```bash
-npm install -g dsh-wallpaper-bg     # 把 dsh-wallpaper-bg 命令装上 PATH（发布后；本地开发用 npm install -g <仓库路径>）
-dsh-wallpaper-bg install            # 自动完成全部安装，幂等可重跑
+# 1. 全局安装插件包，把 dsh-wallpaper-bg 命令放进 PATH
+npm install -g dsh-wallpaper-bg
+
+# 2. 一键安装（幂等，可重复执行）
+dsh-wallpaper-bg install
 ```
 
-`install` 自动做三件事，全程无需手改文件：
+`install` 自动完成以下事情，全程无需手改文件：
 
-1. **解析链检查**：用与 DSH 一致的 ESM 方式探测插件包能否从 harness 锚点解析（DSH 按包名从组合文件目录向上走 `node_modules` 链解析，宿主半与浏览器半同一锚点）；
-2. 解析不到时在 `%USERPROFILE%\.dsh\node_modules` 建指向本包的 junction（Windows）/符号链接；
+1. **解析链检查**：用与 DSH 一致的 ESM 方式，从 harness 锚点（组合文件目录向上走 `node_modules` 链）探测插件能否被解析；
+2. 解析不到时，在 `%USERPROFILE%\.dsh\node_modules` 建指向本包的 junction（Windows）/ 符号链接（macOS / Linux）；
 3. **写入 profile 补丁层** `profiles/<name>/cordis.patch.yml`（用户自有补丁层，带管理标记，`uninstall` 可干净移除）。
 
-装完**刷新页面即可看到壁纸背景**——补丁层支持热重载，之后每次 `dsh web` 启动、首次加载页面就生效，无需会话、无需预设、无需重启。
+装完**刷新页面即可看到壁纸背景**；之后每次 `dsh web` 启动、首次加载页面即生效——无需会话、无需预设、无需重启。
 
-其它命令：`dsh-wallpaper-bg status`（查看安装状态）、`dsh-wallpaper-bg uninstall`（卸载；移除本插件行后若补丁层只剩注释/空白，会自动恢复为带 `[]` 的模板，**不会**留下让 `dsh web` 启动失败的空文件）。
+其它命令：
 
-### 方式二：官方 dsh 命令（推荐）
+```bash
+dsh-wallpaper-bg status      # 查看安装状态（锚点、补丁层、服务端口）
+dsh-wallpaper-bg uninstall   # 卸载；若补丁层只剩注释/空白会自动恢复为模板，不会留下让 dsh web 启动失败的空文件
+```
+
+> 本地开发 / 源码安装：`npm install -g <仓库路径>` 再执行 `install` 即可——junction 指向仓库，改代码即改插件（改完重启 `dsh web` 生效）。
+
+### 方式二：官方 dsh 命令
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg
 ```
 
-> 本地路径含空格时 `dsh plugin` 的参数转发会被拆断，请用裸包名（npm 发布版 / GitHub 包）。
+> 本地路径含空格时 `dsh plugin` 的参数转发会被拆断，请用裸包名（npm 发布版）。
 
-### 方式三：预设行模式（按会话挂载，可选）
+### 方式三：预设行模式（按会话开关壁纸）
 
 想按会话开关壁纸（而不是全局常驻）时：
 
@@ -71,20 +84,20 @@ dsh-wallpaper-bg install --preset
     weBase: http://127.0.0.1:8088
 ```
 
-> 拿不准锚点时：CLI 的 `status` 会直接给出结论；手动排障则把启动报错里的 `imported from <目录>` 抄出来，把插件装进该目录链上的 `node_modules` 即可。
+> 拿不准锚点时：`dsh-wallpaper-bg status` 直接给出结论；手动排障则把启动报错里的 `imported from <目录>` 抄出来，把插件装进该目录链上的 `node_modules` 即可。
 
-## WE 壁纸库（可选组件）
+### 可选组件：WE 壁纸库服务（Windows）
 
-`wallpaper-engine-api/` 是配合使用的本机只读服务，把 Wallpaper Engine 已安装壁纸列表以 HTTP API 暴露在 `127.0.0.1:8088`：
+「WE 壁纸库」来源需要 `wallpaper-engine-api/` 服务，它把 Wallpaper Engine 已安装壁纸列表以只读 HTTP API 暴露在 `127.0.0.1:8088`：
 
-1. 进入 `wallpaper-engine-api/`，执行 `npm install`。
-2. 双击 `启动服务.bat`（或 `启动服务-静默.vbs`）启动。
-3. 可选：双击 `设置开机自启.bat`，登录 Windows 时静默启动。
+1. 进入 `wallpaper-engine-api/` 目录，执行 `npm install`；
+2. 双击 `启动服务.bat`（首次运行会引导写入安装路径；也可用 `启动服务-静默.vbs` 静默启动）；
+3. 可选：双击 `设置开机自启.bat`，登录 Windows 时自动启动；
+4. 之后升级 / 重启服务一律双击 `重启服务(管理员).bat`：自动请求管理员权限、结束旧进程并静默重启，等待端口就绪（全程日志见 `restart-debug.log`）。
 
-服务**只读**：仅调用列表 / 当前壁纸查询，绝不触碰设置或播放接口；未检测到 WE 运行时不会拉起 WE 主程序。列表按 Steam 真实订阅清单过滤——在 WE 里退订的壁纸即使文件夹残留也不会再出现（与 WE 界面一致）。
+服务**只读**：仅调用列表 / 当前壁纸查询，绝不触碰设置或播放接口；未检测到 WE 运行时也不会拉起 WE 主程序。列表按 Steam 真实订阅清单（`431960_subscriptions.vdf`）过滤——在 WE 里退订 / 本地禁用的壁纸即使文件夹残留也不会再出现，与 WE 界面一致。
 
-> 升级/重启服务：双击 `重启服务(管理员).bat`（自动请求管理员权限、结束旧进程并静默重启，等待端口就绪）。
-> 端口 8088 是历史选择：8080 曾被 Jenkins 占用。如需换端口，设置环境变量 `WEAPI_PORT`，并在插件设置面板里把基地址改成对应值。
+> 验证：浏览器打开 `http://127.0.0.1:8088/health` 返回 JSON 即正常；插件侧打开 `http://127.0.0.1:3080/dsh-wallpaper-bg/health` 可看插件版本。端口 8088 是历史选择（8080 曾被 Jenkins 占用）；换端口用环境变量 `WEAPI_PORT`，并在插件设置面板里把基地址改成对应值。
 
 ## 设置面板说明
 
@@ -100,6 +113,18 @@ dsh-wallpaper-bg install --preset
 | 背景模糊度 / 背景亮度 | 0–20px / 50–150% |
 | 安全放大 | 0–10%，按比例放大背景以裁掉边缘黑边 |
 | 恢复默认 | 一键重置全部设置 |
+
+## 原理
+
+本包是 DSH **静态双半插件**，并作为 **profile 补丁层（bundle）**组合进 DSH 的 host 平面：
+
+| 半边 | 文件 | 职责 |
+| --- | --- | --- |
+| 宿主半（Node） | `lib/host.js` | 注册同源路由：`/dsh-wallpaper-bg/asset`（本地文件流式代理，支持 Range）、`/dsh-wallpaper-bg/we`（WE API 只读代理，带缓存）、`/dsh-wallpaper-bg/health` |
+| 浏览器半 | `lib/client.js` | 单文件 client bundle（`window.__ModuleLoader__` 工厂形式），注入背景层与遮罩、注册设置面板「壁纸」选项卡 |
+| 组合层 | `cordis.patch.yml` | `dsh.bundle` 补丁：把插件行插入 profile 组合的 host 平面，**随 `dsh web` 启动即生效**，首次加载页面就带背景 |
+
+两端零构建：`lib/client.js` 是手写的单文件 bundle，无需任何打包工具；另附 `dsh-wallpaper-bg` CLI（`install` / `status` / `uninstall`）完成一键安装。
 
 ## 常见问题
 
