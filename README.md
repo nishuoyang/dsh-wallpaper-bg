@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 网页界面添加**独立的动态壁纸背景**的静态插件（v0.1.0）。
+给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) 网页界面添加**独立的动态壁纸背景**的静态插件（v0.2.1）。
 
 背景层独立于桌面 Wallpaper Engine —— 在 DSH 里换壁纸不会动你的桌面壁纸，反之亦然。
 
@@ -29,7 +29,7 @@
 
 ## 安装
 
-### 方式一：一键 CLI（推荐）
+### 方式一：一键 CLI
 
 ```bash
 npm install -g dsh-wallpaper-bg     # 把 dsh-wallpaper-bg 命令装上 PATH（发布后；本地开发用 npm install -g <仓库路径>）
@@ -46,10 +46,10 @@ dsh-wallpaper-bg install            # 自动完成全部安装，幂等可重跑
 
 其它命令：`dsh-wallpaper-bg status`（查看安装状态）、`dsh-wallpaper-bg uninstall`（卸载；移除本插件行后若补丁层只剩注释/空白，会自动恢复为带 `[]` 的模板，**不会**留下让 `dsh web` 启动失败的空文件）。
 
-### 方式二：官方 dsh 命令（npm 发布后）
+### 方式二：官方 dsh 命令（推荐）
 
 ```bash
-dsh plugin --profile web add dsh-wallpaper-bg    # 装进 profile 并作为 bundle 层激活，效果同方式一
+dsh plugin --profile web add dsh-wallpaper-bg
 ```
 
 > 本地路径含空格时 `dsh plugin` 的参数转发会被拆断，请用裸包名（npm 发布版 / GitHub 包）。
@@ -81,8 +81,9 @@ dsh-wallpaper-bg install --preset
 2. 双击 `启动服务.bat`（或 `启动服务-静默.vbs`）启动。
 3. 可选：双击 `设置开机自启.bat`，登录 Windows 时静默启动。
 
-服务**只读**：仅调用列表 / 当前壁纸查询，绝不触碰设置或播放接口；未检测到 WE 运行时不会拉起 WE 主程序。
+服务**只读**：仅调用列表 / 当前壁纸查询，绝不触碰设置或播放接口；未检测到 WE 运行时不会拉起 WE 主程序。列表按 Steam 真实订阅清单过滤——在 WE 里退订的壁纸即使文件夹残留也不会再出现（与 WE 界面一致）。
 
+> 升级/重启服务：双击 `重启服务(管理员).bat`（自动请求管理员权限、结束旧进程并静默重启，等待端口就绪）。
 > 端口 8088 是历史选择：8080 曾被 Jenkins 占用。如需换端口，设置环境变量 `WEAPI_PORT`，并在插件设置面板里把基地址改成对应值。
 
 ## 设置面板说明
@@ -105,6 +106,7 @@ dsh-wallpaper-bg install --preset
 - **视频有黑边？** 用「安全放大」拉 2–3% 即可裁掉画面自带的黑边（渲染层的 cover 裁剪已保证不自造黑边）。
 - **改了代码不生效？** 改 `lib/client.js` 或 `lib/host.js` 后重启 DSH（客户端 bundle 按内容哈希进 boot graph，新增/移除插件行需要重启）。
 - **WE 壁纸库报错？** 确认 `wallpaper-engine-api` 服务在 8088 端口运行（浏览器访问 `http://127.0.0.1:8088/health` 验证），且插件设置里的基地址一致。
+- **在 WE 里删掉的壁纸还在插件里？** 服务会按 Steam 订阅清单过滤，退订的壁纸不再列出；若服务还是旧版本（`/health` 没有 `subscriptionsFile` 字段），双击 `重启服务(管理员).bat` 升级，然后点插件里的「刷新」。
 
 ## 开源
 

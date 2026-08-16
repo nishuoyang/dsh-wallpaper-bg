@@ -14,6 +14,11 @@
  *   - 调用 current() 前先用 tasklist 确认 WE 正在运行，未运行直接返回 null，
  *     避免 -control 命令意外拉起 Wallpaper Engine 主程序。
  *
+ * 订阅过滤：列表按 Steam UGC 订阅清单（userdata/<id>/ugc/431960_subscriptions.vdf）
+ * 过滤，已退订 / 本地禁用但文件夹仍残留的壁纸不会出现在列表里，与 WE 界面一致；
+ * 清单读不到时退化为不过滤。可用环境变量 WE_SUBSCRIPTIONS_FILE 或
+ * we-api.config 的 WE_SUBSCRIPTIONS_FILE 显式指定清单路径。
+ *
  * 路径解析优先级：环境变量 > 同目录 we-api.config（由 启动服务.bat 首次运行
  * 向导写入）> 自动探测（注册表 SteamPath → 常见 Steam 安装位置）。
  *
@@ -131,11 +136,74 @@ try {
 }
 
 // ---------------------------------------------------------------------------
+// Steam 订阅过滤（与 WE 界面一致：退订 / 本地禁用的壁纸不再出现在列表里）
+// ---------------------------------------------------------------------------
+
+/**
+ * 解析 Steam UGC 订阅清单（userdata/<id>/ugc/431960_subscriptions.vdf），
+ * 返回仍然订阅且未被本地禁用的 publishedfileid 集合。
+ * 背景：从 WE 退订壁纸后，Steam 会立刻把条目从订阅清单移除，但 workshop
+ * content 目录下的文件夹删除可能被延迟（文件被占用等），wallpaper-engine-api
+ * 只按文件夹列目录，就会把「已退订但文件夹还在」的壁纸列出来——与 WE 界面
+ * 不一致。所以这里按真实订阅清单过滤。清单读不到时返回 null（不过滤）。
+ */
+function parseVisibleIds(text) {
+  const visible = new Set()
+  const entryRe = /"(\d+)"\s*\{([^}]*)\}/g
+  let m
+  while ((m = entryRe.exec(text))) {
+    const body = m[2]
+    const fid = /"publishedfileid"\s+"(\d+)"/.exec(body)
+    if (!fid) continue
+    const dis = /"disabled_locally"\s+"(\d+)"/.exec(body)
+    if (dis && dis[1] === '1') continue
+    visible.add(fid[1])
+  }
+  return visible
+}
+
+/** 定位订阅清单文件：显式配置优先，其次从 workshop 路径反推 Steam 根目录扫描 userdata */
+function findSubscriptionsFiles() {
+  const explicit = [process.env.WE_SUBSCRIPTIONS_FILE, cfgFile.WE_SUBSCRIPTIONS_FILE].filter(Boolean)
+  for (const f of explicit) {
+    if (fs.existsSync(f)) return [f]
+  }
+  const files = []
+  try {
+    const steamRoot = path.normalize(path.join(WE_WORKSHOP_PATH, '..', '..', '..', '..'))
+    const userdataDir = path.join(steamRoot, 'userdata')
+    if (fs.existsSync(userdataDir)) {
+      for (const entry of fs.readdirSync(userdataDir)) {
+        const p = path.join(userdataDir, entry, 'ugc', '431960_subscriptions.vdf')
+        if (fs.existsSync(p)) files.push(p)
+      }
+    }
+  } catch {
+    /* 定位失败则退化为不过滤 */
+  }
+  return files
+}
+
+function loadVisibleIds() {
+  const files = findSubscriptionsFiles()
+  if (!files.length) return null
+  const visible = new Set()
+  for (const f of files) {
+    try {
+      for (const id of parseVisibleIds(fs.readFileSync(f, 'utf8'))) visible.add(id)
+    } catch {
+      /* 单份清单读不了就跳过 */
+    }
+  }
+  return visible.size ? visible : null
+}
+
+// ---------------------------------------------------------------------------
 // 只读数据层
 // ---------------------------------------------------------------------------
 
 const LIST_TTL_MS = 60 * 1000
-let listCache = { time: 0, items: null }
+let listCache = { time: 0, items: null, hidden: 0 }
 
 function readProjectJson(pjPath) {
   try {
@@ -194,12 +262,19 @@ function enrich(w) {
 
 async function getWallpapers(refresh) {
   if (!refresh && listCache.items && Date.now() - listCache.time < LIST_TTL_MS) {
-    return listCache.items
+    return { items: listCache.items, hidden: listCache.hidden || 0 }
   }
   const raw = await we.listWallpapers()
-  const items = raw.map(enrich).filter(Boolean)
-  listCache = { time: Date.now(), items }
-  return items
+  let items = raw.map(enrich).filter(Boolean)
+  const visibleIds = loadVisibleIds()
+  let hidden = 0
+  if (visibleIds) {
+    const before = items.length
+    items = items.filter((it) => visibleIds.has(String(it.id)))
+    hidden = before - items.length
+  }
+  listCache = { time: Date.now(), items, hidden }
+  return { items, hidden }
 }
 
 /** tasklist 检测 WE 是否在运行（结果缓存 10 秒，仅供 /health 展示） */
@@ -316,12 +391,14 @@ const server = http.createServer(async (req, res) => {
   }
   try {
     if (p === '/' || p === '/health' || p === '/api/health') {
+      const subFiles = findSubscriptionsFiles()
       return sendJson(res, 200, {
         ok: true,
         service: 'we-api-proxy',
         mode: 'readonly',
         weInstallPath: WE_INSTALL_PATH,
         workshopPath: WE_WORKSHOP_PATH,
+        subscriptionsFile: subFiles.length ? subFiles.join('; ') : null,
         weRunning: await isWeRunning(),
         time: new Date().toISOString(),
       })
@@ -331,8 +408,13 @@ const server = http.createServer(async (req, res) => {
       p === '/api/wallpapers/list' || p === '/api/list' || p === '/list'
     ) {
       const refresh = url.searchParams.get('refresh') === '1'
-      const items = await getWallpapers(refresh)
-      return sendJson(res, 200, { ok: true, wallpapers: items, count: items.length })
+      const { items, hidden } = await getWallpapers(refresh)
+      return sendJson(res, 200, {
+        ok: true,
+        wallpapers: items,
+        count: items.length,
+        hiddenUnsubscribed: hidden,
+      })
     }
     if (
       p === '/api/current' || p === '/current' ||

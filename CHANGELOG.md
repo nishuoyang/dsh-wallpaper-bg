@@ -2,6 +2,17 @@
 
 本文件记录 dsh-wallpaper-bg 的用户可见变更。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [0.2.2] - 2026-08-16
+
+### 修复
+
+- **在 WE 里删掉（退订）的壁纸仍然出现在插件列表里**：退订后 Steam 会立刻把条目从订阅清单移除，但 workshop 目录下的文件夹删除可能被延迟（文件被占用等），旧版按文件夹列目录就会把残留壁纸列出来。现在 WE API 按 Steam 真实订阅清单（`userdata/<id>/ugc/431960_subscriptions.vdf`）过滤，退订 / 本地禁用的壁纸不再出现，与 WE 界面一致；清单读不到时退化为不过滤。列表响应新增 `hiddenUnsubscribed` 计数，`/health` 显示所用清单路径。
+- 宿主的「刷新」现在把 `refresh` 透传给 WE API，绕过下游 60 秒缓存，删掉壁纸后立刻可见。
+
+### 新增
+
+- `wallpaper-engine-api/重启服务(管理员).bat`：一键结束并静默重启 WE API 服务（自动请求管理员权限——旧服务若以高权限启动，普通权限杀不掉），并等待端口就绪。
+
 ## [0.2.1] - 2026-08-13
 
 ### 修复
