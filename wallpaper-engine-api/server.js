@@ -149,7 +149,10 @@ function readProjectJson(pjPath) {
 /**
  * 把 wallpaper-engine-api 的列表条目补全为插件可消费的形态：
  *  - filepath：project.json 里 file 字段指向的真实媒体文件（视频/图片/pkg）
- *  - type：project.json 的 type 字段；缺失时按扩展名兜底（.pkg→scene、.html→web）
+ *  - type：project.json 的 type 字段（统一小写）；缺失时按扩展名兜底
+ *    （.pkg→scene、.html→web、视频扩展名→video、图片扩展名→image）
+ *  - rating：project.json 的 contentrating（everyone/questionable/mature，
+ *    缺失为空字符串）——供前端 18+ / 非18+ 筛选使用
  *  - thumbnail：预览图绝对路径
  */
 function enrich(w) {
@@ -159,7 +162,7 @@ function enrich(w) {
   let filepath = ''
   let type = ''
   if (pj) {
-    if (typeof pj.type === 'string') type = pj.type
+    if (typeof pj.type === 'string' && pj.type) type = pj.type.trim().toLowerCase()
     if (typeof pj.file === 'string' && pj.file) {
       const candidate = path.join(dir, pj.file)
       if (fs.existsSync(candidate)) filepath = candidate
@@ -169,6 +172,12 @@ function enrich(w) {
     const ext = path.extname(filepath).toLowerCase()
     if (ext === '.pkg') type = 'scene'
     else if (ext === '.html' || ext === '.htm') type = 'web'
+    else if (/\.(mp4|webm|mkv|avi|mov|m4v)$/i.test(ext)) type = 'video'
+    else if (/\.(jpe?g|png|webp|gif|bmp)$/i.test(ext)) type = 'image'
+  }
+  let rating = ''
+  if (pj && typeof pj.contentrating === 'string' && pj.contentrating) {
+    rating = pj.contentrating.trim().toLowerCase()
   }
   return {
     id: String(w.id),
@@ -179,6 +188,7 @@ function enrich(w) {
     previewUrl: '',
     tags: Array.isArray(w.tags) ? w.tags : [],
     description: typeof w.description === 'string' ? w.description : '',
+    rating,
   }
 }
 
@@ -250,13 +260,18 @@ async function getCurrent() {
     }
 
     let type = ''
-    if (pj && typeof pj.type === 'string') type = pj.type
+    if (pj && typeof pj.type === 'string' && pj.type) type = pj.type.trim().toLowerCase()
     if (!type) {
       const ext = path.extname(norm).toLowerCase()
       if (ext === '.pkg') type = 'scene'
       else if (ext === '.html' || ext === '.htm') type = 'web'
       else if (/\.(mp4|webm|mkv|avi|mov|m4v)$/i.test(ext)) type = 'video'
       else if (/\.(jpe?g|png|webp|gif|bmp)$/i.test(ext)) type = 'image'
+    }
+
+    let rating = ''
+    if (pj && typeof pj.contentrating === 'string' && pj.contentrating) {
+      rating = pj.contentrating.trim().toLowerCase()
     }
 
     return {
@@ -268,6 +283,7 @@ async function getCurrent() {
       previewUrl: '',
       tags: pj && Array.isArray(pj.tags) ? pj.tags : [],
       description: pj && typeof pj.description === 'string' ? pj.description : '',
+      rating,
     }
   } catch {
     return null
