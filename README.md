@@ -8,6 +8,10 @@
 
 ![设置面板 · 壁纸选项卡](docs/screenshots/settings-panel.jpg)
 
+![更多界面预览（一）](docs/screenshots/gallery-01.jpg)
+
+![更多界面预览（二）](docs/screenshots/gallery-02.jpg)
+
 ## 功能
 
 - **三种壁纸来源**
