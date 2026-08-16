@@ -7,6 +7,8 @@
  *   GET /health、/            → 服务状态
  *   GET /api/wallpapers       → 已安装壁纸列表（含 /wallpapers 等别名）
  *   GET /api/current          → 当前桌面壁纸（含 /current 等别名）
+ *   GET /files/<id>/<rel>     → Web 类壁纸的目录文件（index.html 及其相对资源，
+ *                               仅限已订阅壁纸目录内，供插件 iframe 原生渲染）
  *
  * 隔离原则：
  *   - 只调用 wallpaper-engine-api 的 listWallpapers() / wallpaper().current()，
@@ -184,18 +186,27 @@ function findSubscriptionsFiles() {
   return files
 }
 
+const VISIBLE_IDS_TTL_MS = 30 * 1000
+let visibleIdsCache = { time: 0, ids: null, ready: false }
 function loadVisibleIds() {
-  const files = findSubscriptionsFiles()
-  if (!files.length) return null
-  const visible = new Set()
-  for (const f of files) {
-    try {
-      for (const id of parseVisibleIds(fs.readFileSync(f, 'utf8'))) visible.add(id)
-    } catch {
-      /* 单份清单读不了就跳过 */
-    }
+  if (visibleIdsCache.ready && Date.now() - visibleIdsCache.time < VISIBLE_IDS_TTL_MS) {
+    return visibleIdsCache.ids
   }
-  return visible.size ? visible : null
+  const files = findSubscriptionsFiles()
+  let visible = null
+  if (files.length) {
+    const set = new Set()
+    for (const f of files) {
+      try {
+        for (const id of parseVisibleIds(fs.readFileSync(f, 'utf8'))) set.add(id)
+      } catch {
+        /* 单份清单读不了就跳过 */
+      }
+    }
+    visible = set.size ? set : null
+  }
+  visibleIdsCache = { time: Date.now(), ids: visible, ready: true }
+  return visible
 }
 
 // ---------------------------------------------------------------------------
@@ -247,12 +258,23 @@ function enrich(w) {
   if (pj && typeof pj.contentrating === 'string' && pj.contentrating) {
     rating = pj.contentrating.trim().toLowerCase()
   }
+  // 缩略图优先取动画 preview.gif（存在时），否则按 project.json 的 preview 字段
+  let thumbnail = ''
+  const gifPath = path.join(dir, 'preview.gif')
+  if (fs.existsSync(gifPath)) {
+    thumbnail = gifPath
+  } else if (pj && typeof pj.preview === 'string' && pj.preview) {
+    thumbnail = path.join(dir, pj.preview)
+  } else if (typeof w.preview === 'string') {
+    thumbnail = w.preview
+  }
   return {
     id: String(w.id),
     title: typeof w.title === 'string' && w.title ? w.title : '未命名壁纸',
     type,
     filepath,
-    thumbnail: typeof w.preview === 'string' ? w.preview : '',
+    entry: pj && typeof pj.file === 'string' ? pj.file : '',
+    thumbnail,
     previewUrl: '',
     tags: Array.isArray(w.tags) ? w.tags : [],
     description: typeof w.description === 'string' ? w.description : '',
@@ -349,12 +371,20 @@ async function getCurrent() {
       rating = pj.contentrating.trim().toLowerCase()
     }
 
+    let thumbnail = ''
+    const gifPath = path.join(dir, 'preview.gif')
+    if (fs.existsSync(gifPath)) {
+      thumbnail = gifPath
+    } else if (pj && typeof pj.preview === 'string' && pj.preview) {
+      thumbnail = path.join(dir, pj.preview)
+    }
     return {
       id: path.basename(dir),
       title: pj && typeof pj.title === 'string' && pj.title ? pj.title : path.basename(dir),
       type,
       filepath: norm,
-      thumbnail: pj && typeof pj.preview === 'string' && pj.preview ? path.join(dir, pj.preview) : '',
+      entry: pj && typeof pj.file === 'string' ? pj.file : '',
+      thumbnail,
       previewUrl: '',
       tags: pj && Array.isArray(pj.tags) ? pj.tags : [],
       description: pj && typeof pj.description === 'string' ? pj.description : '',
@@ -363,6 +393,89 @@ async function getCurrent() {
   } catch {
     return null
   }
+}
+
+// ---------------------------------------------------------------------------
+// Web 类壁纸目录文件服务（供插件 iframe 原生渲染 index.html 及其相对资源）
+// ---------------------------------------------------------------------------
+
+const WEB_FILE_MIME = {
+  '.html': 'text/html; charset=utf-8',
+  '.htm': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+  '.mjs': 'text/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.avif': 'image/avif',
+  '.ico': 'image/x-icon',
+  '.mp3': 'audio/mpeg',
+  '.ogg': 'audio/ogg',
+  '.wav': 'audio/wav',
+  '.m4a': 'audio/mp4',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.txt': 'text/plain; charset=utf-8',
+  '.glsl': 'text/plain; charset=utf-8',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.wasm': 'application/wasm',
+}
+
+/**
+ * 只读地服务 workshop 目录里的文件：
+ *   GET /files/<workshopId>/<相对路径>
+ * 安全约束：id 仅数字、必须在订阅清单内（清单缺失时跳过该检查）、
+ * 解析后的绝对路径必须落在 <WE_WORKSHOP_PATH>\<id> 目录内。
+ */
+function serveWorkshopFile(res, url) {
+  let rest
+  try {
+    rest = decodeURIComponent(url.pathname.slice('/files/'.length))
+  } catch {
+    return sendJson(res, 400, { ok: false, error: '非法路径编码' })
+  }
+  const segs = rest.split('/').filter(Boolean)
+  const id = segs.shift() || ''
+  if (!/^\d{1,20}$/.test(id)) return sendJson(res, 400, { ok: false, error: '非法壁纸 ID' })
+  const visibleIds = loadVisibleIds()
+  if (visibleIds && !visibleIds.has(id)) {
+    return sendJson(res, 403, { ok: false, error: '该壁纸未订阅或已本地禁用' })
+  }
+  const root = path.join(WE_WORKSHOP_PATH, id)
+  if (!fs.existsSync(root)) return sendJson(res, 404, { ok: false, error: '壁纸目录不存在' })
+  const rel = segs.join('/') || 'index.html'
+  let file
+  try {
+    file = path.resolve(root, rel)
+    if (file !== root && !file.startsWith(root + path.sep)) {
+      return sendJson(res, 403, { ok: false, error: '路径越界' })
+    }
+  } catch {
+    return sendJson(res, 400, { ok: false, error: '非法路径' })
+  }
+  let st
+  try {
+    st = fs.statSync(file)
+  } catch {
+    return sendJson(res, 404, { ok: false, error: '文件不存在' })
+  }
+  if (!st.isFile()) return sendJson(res, 404, { ok: false, error: '不是文件' })
+  const data = fs.readFileSync(file)
+  res.writeHead(200, {
+    'Content-Type': WEB_FILE_MIME[path.extname(file).toLowerCase()] || 'application/octet-stream',
+    'Content-Length': data.length,
+    'Cache-Control': 'no-store',
+    'Access-Control-Allow-Origin': '*',
+  })
+  return res.end(data)
 }
 
 // ---------------------------------------------------------------------------
@@ -395,6 +508,7 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, {
         ok: true,
         service: 'we-api-proxy',
+        version: '0.2.4',
         mode: 'readonly',
         weInstallPath: WE_INSTALL_PATH,
         workshopPath: WE_WORKSHOP_PATH,
@@ -422,6 +536,9 @@ const server = http.createServer(async (req, res) => {
     ) {
       return sendJson(res, 200, { ok: true, current: await getCurrent() })
     }
+    if (p.startsWith('/files/')) {
+      return serveWorkshopFile(res, url)
+    }
     return sendJson(res, 404, { ok: false, error: '未知端点: ' + p })
   } catch (err) {
     return sendJson(res, 500, { ok: false, error: String((err && err.message) || err) })
@@ -430,7 +547,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, HOST, () => {
   console.log('[WE-API] 只读代理服务已启动: http://' + HOST + ':' + PORT)
-  console.log('[WE-API] 端点: /health  /api/wallpapers  /api/current')
+  console.log('[WE-API] 端点: /health  /api/wallpapers  /api/current  /files/<id>/...')
   console.log('[WE-API] 壁纸库: ' + WE_WORKSHOP_PATH)
   console.log('[WE-API] 本服务只读，不调用任何设置/播放壁纸的接口，桌面壁纸不受影响。')
 })

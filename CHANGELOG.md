@@ -2,6 +2,18 @@
 
 本文件记录 dsh-wallpaper-bg 的用户可见变更。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [0.2.4] - 2026-08-16
+
+### 新增
+
+- **Web 类壁纸浏览器原生渲染**：web 类型壁纸本身就是 HTML/JS 网页，现在插件用 iframe 全屏原生渲染其 `index.html`（此前被误归为 scene 只能看静态预览）。WE API 新增只读目录文件路由 `/files/<id>/<相对路径>`（路径越界保护 + 仅限订阅清单内的壁纸目录），供 iframe 加载相对资源；设置面板类型筛选新增「网页」按钮，卡片新增「网页」角标。
+- **场景缩略图优先取动画 preview.gif**：列表与全屏展示优先用 `preview.gif`（存在时），没有才退回 `preview.jpg`，更多场景能在浏览器里动起来。
+
+### 变更
+
+- WE API：`/health` 新增 `version` 字段（0.2.4），列表条目新增 `entry`（project.json 的入口文件相对路径）；订阅清单读取加 30 秒缓存。
+- 文档：常见问题新增「场景录成 MP4 上传」的高保真方案与 Web 壁纸渲染说明。
+
 ## [0.2.3] - 2026-08-16
 
 ### 新增
