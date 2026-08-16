@@ -2,6 +2,13 @@
 
 本文件记录 dsh-wallpaper-bg 的用户可见变更。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [0.1.1] - 2026-08-13
+
+### 修复
+
+- **卸载后补丁层变成空文件、`dsh web` 启动失败**：移除插件行后若 `cordis.patch.yml` 只剩注释/空白（YAML 解析为 null，而 DSH 要求该文件要么不存在、要么是顶层数组），CLI 现在自动恢复为带 `[]` 的模板内容；对已损坏的空/仅注释文件同样自愈
+- 目标 profile 还没有 `cordis.patch.yml` 时，`install` 现在会先按 DSH 自带模板创建该文件再写入插件行（此前会报「找不到补丁层」）
+
 ## [0.1.0] - 2026-08-13
 
 首个正式版：由动态插件形态重构为可常驻的 DSH 静态双半插件包。

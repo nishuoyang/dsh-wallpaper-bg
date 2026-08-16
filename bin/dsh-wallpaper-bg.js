@@ -111,6 +111,46 @@ function profilePatchPaths() {
   return paths
 }
 
+/** 各 profile 目录（排除 node_modules） */
+function profileDirs() {
+  const dirs = []
+  const profilesDir = join(dshHome, 'profiles')
+  if (!existsSync(profilesDir)) return dirs
+  let entries = []
+  try {
+    entries = readdirSync(profilesDir)
+  } catch {
+    return dirs
+  }
+  for (const entry of entries) {
+    if (entry === 'node_modules') continue
+    const p = join(profilesDir, entry)
+    try {
+      if (lstatSync(p).isDirectory()) dirs.push(p)
+    } catch {
+      /* 跳过 */
+    }
+  }
+  return dirs
+}
+
+/** 为还没有补丁层的 profile 目录创建模板补丁文件（与 DSH initProfile 的模板一致） */
+function ensurePatchFiles() {
+  const created = []
+  for (const dir of profileDirs()) {
+    const p = join(dir, 'cordis.patch.yml')
+    try {
+      if (!existsSync(p)) {
+        writeFileSync(p, PATCH_TEMPLATE, 'utf8')
+        created.push(p)
+      }
+    } catch {
+      /* 创建失败交给后续 writePatch 报错 */
+    }
+  }
+  return created
+}
+
 // ---------------------------------------------------------------------------
 // 解析链检查与链接安装
 // ---------------------------------------------------------------------------
@@ -254,6 +294,14 @@ function writePatch(path, weBase) {
   return { ok: true, note: 'installed into ' + path }
 }
 
+/** 去掉注释与空白行后，文本里是否还有实质内容 */
+function meaningfulLines(text) {
+  return text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l !== '' && !l.startsWith('#'))
+}
+
 function removePatch(path) {
   if (!existsSync(path)) return { ok: true, note: 'no patch layer at ' + path }
   let lines
@@ -285,11 +333,27 @@ function removePatch(path) {
     }
     kept.push(line)
   }
+  const body = kept.join('\n').trim()
+  // 关键修复：DSH 要求该文件要么不存在、要么是顶层 YAML 数组
+  // （dsh-app-boot parsePatchList 对非数组内容直接 throw，启动即失败）。
+  // 移除本插件行后若只剩注释/空白（YAML 解析为 null），必须恢复模板态，
+  // 至少留下 []——否则用户重启 dsh web 会因空补丁层启动失败。
+  if (meaningfulLines(body).length === 0) {
+    try {
+      writeFileSync(path, PATCH_TEMPLATE, 'utf8')
+    } catch {
+      return { ok: false, note: 'cannot write ' + path }
+    }
+    return {
+      ok: true,
+      note: removed
+        ? 'removed from ' + path + '（已恢复为模板 []，避免空补丁层导致 dsh 启动失败）'
+        : 'not installed in ' + path + '（补丁层为空内容，已恢复为模板 []）',
+    }
+  }
   if (!removed) return { ok: true, note: 'not installed in ' + path }
-  const remaining = kept.join('\n').trim()
-  const next = remaining === '' || remaining === '[]' ? PATCH_TEMPLATE : kept.join('\n') + '\n'
   try {
-    writeFileSync(path, next, 'utf8')
+    writeFileSync(path, body + '\n', 'utf8')
   } catch {
     return { ok: false, note: 'cannot write ' + path }
   }
@@ -499,6 +563,9 @@ function main() {
     }
 
     const weBase = args.weBase || DEFAULT_WE_BASE
+    for (const p of ensurePatchFiles()) {
+      console.log('[patch] created template layer at ' + p)
+    }
     const paths = profilePatchPaths()
     if (!paths.length) {
       console.error('ERROR: 找不到 profiles/*/cordis.patch.yml；本部署可能没有 profile 补丁层，请改用 --preset 模式')

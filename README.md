@@ -44,7 +44,7 @@ dsh-wallpaper-bg install            # 自动完成全部安装，幂等可重跑
 
 装完**刷新页面即可看到壁纸背景**——补丁层支持热重载，之后每次 `dsh web` 启动、首次加载页面就生效，无需会话、无需预设、无需重启。
 
-其它命令：`dsh-wallpaper-bg status`（查看安装状态）、`dsh-wallpaper-bg uninstall`（卸载）。
+其它命令：`dsh-wallpaper-bg status`（查看安装状态）、`dsh-wallpaper-bg uninstall`（卸载；移除本插件行后若补丁层只剩注释/空白，会自动恢复为带 `[]` 的模板，**不会**留下让 `dsh web` 启动失败的空文件）。
 
 ### 方式二：官方 dsh 命令（npm 发布后）
 
