@@ -2,6 +2,12 @@
 
 本文件记录 dsh-wallpaper-bg 的用户可见变更。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [0.2.5] - 2026-08-20
+
+### 修复
+
+- **WE API 开机自启失效**：旧版 `设置开机自启.bat` 把 `启动服务-静默.vbs` 复制到启动文件夹，但 VBS 按自身所在目录启动 `node server.js`——副本位于启动文件夹，找不到 `server.js`，每次登录都会静默失败（`we-api.log` 记录 `MODULE_NOT_FOUND`）。现改为把 `"wscript.exe" "…\启动服务-静默.vbs"` 注册到注册表 `HKCU\...\Run`，直接引用原目录脚本，登录即可正常启动；`取消开机自启.bat` 删除注册项并兼容清理旧版启动文件夹副本。两个脚本统一为 UTF-8（带 BOM）编码。
+
 ## [0.2.5] - 2026-08-16
 
 ### 变更

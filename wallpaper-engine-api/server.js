@@ -508,7 +508,7 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, {
         ok: true,
         service: 'we-api-proxy',
-        version: '0.2.4',
+        version: '0.2.5',
         mode: 'readonly',
         weInstallPath: WE_INSTALL_PATH,
         workshopPath: WE_WORKSHOP_PATH,
