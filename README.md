@@ -36,59 +36,11 @@
 - 已装好 DeepSeek Harness，且能用 `dsh web` 正常启动网页界面；
 - 仅「WE 壁纸库」来源需要 Windows + 本机 Wallpaper Engine（可选组件，见下文）。
 
-### 方式一：CLI 一键安装（推荐）
-
-```bash
-# 1. 全局安装插件包，把 dsh-wallpaper-bg 命令放进 PATH
-npm install -g dsh-wallpaper-bg
-
-# 2. 一键安装（幂等，可重复执行）
-dsh-wallpaper-bg install
-```
-
-`install` 自动完成以下事情，全程无需手改文件：
-
-1. **解析链检查**：用与 DSH 一致的 ESM 方式，从 harness 锚点（组合文件目录向上走 `node_modules` 链）探测插件能否被解析；
-2. 解析不到时，在 `%USERPROFILE%\.dsh\node_modules` 建指向本包的 junction（Windows）/ 符号链接（macOS / Linux）；
-3. **写入 profile 补丁层** `profiles/<name>/cordis.patch.yml`（用户自有补丁层，带管理标记，`uninstall` 可干净移除）。
-
-装完**刷新页面即可看到壁纸背景**；之后每次 `dsh web` 启动、首次加载页面即生效——无需会话、无需预设、无需重启。
-
-其它命令：
-
-```bash
-dsh-wallpaper-bg status      # 查看安装状态（锚点、补丁层、服务端口）
-dsh-wallpaper-bg uninstall   # 卸载；若补丁层只剩注释/空白会自动恢复为模板，不会留下让 dsh web 启动失败的空文件
-```
-
-> 本地开发 / 源码安装：`npm install -g <仓库路径>` 再执行 `install` 即可——junction 指向仓库，改代码即改插件（改完重启 `dsh web` 生效）。
-
-### 方式二：官方 dsh 命令
+### 安装方式：官方 dsh 命令
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg
 ```
-
-> 本地路径含空格时 `dsh plugin` 的参数转发会被拆断，请用裸包名（npm 发布版）。
-
-### 方式三：预设行模式（按会话开关壁纸）
-
-想按会话开关壁纸（而不是全局常驻）时：
-
-```bash
-dsh-wallpaper-bg install --preset
-```
-
-会复制 `standard` 预设为 `standard-wallpaper` 并追加插件行；重启 DSH 后新建会话选择该预设即可。也可以手动在任一预设的 `agent.cordis.yml` 末尾追加：
-
-```yaml
-- id: wallpaper-bg
-  name: dsh-wallpaper-bg
-  config:
-    weBase: http://127.0.0.1:8088
-```
-
-> 拿不准锚点时：`dsh-wallpaper-bg status` 直接给出结论；手动排障则把启动报错里的 `imported from <目录>` 抄出来，把插件装进该目录链上的 `node_modules` 即可。
 
 ### 可选组件：WE 壁纸库服务（Windows）
 
