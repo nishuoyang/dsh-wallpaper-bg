@@ -1,98 +1,109 @@
 # dsh-wallpaper-bg
 
-> v0.2.5 · MIT License
+> v0.3.3 · MIT License
 
-给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）网页界面加上一层**独立的动态壁纸背景**的静态双半插件：一条命令装好、刷新页面，整个界面的底层就变成一张会动的壁纸。内置 10 张 Unsplash 高清图，支持本地自定义图片 / 视频上传，还能只读接入本机 Wallpaper Engine 壁纸库——视频、场景（动图预览）、网页三类壁纸都能在浏览器里动起来；浅色外观自动铺半透明白雾、深色外观自动压暗遮罩，保证界面细字始终清晰。背景层与桌面 Wallpaper Engine 完全独立：在 DSH 里换壁纸不会动你的桌面壁纸，反之亦然。
+English | [中文](README.zh.md)
 
-![暗色外观下的 DSH 界面](docs/screenshots/overview-dark.jpg)
+A static two-half plugin that puts an **independent animated wallpaper layer** under the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH) web UI: one command to install, refresh the page, and the whole interface sits on a moving wallpaper. Ships with 10 high-res Unsplash images, supports uploading local images / videos, and can read-only connect to your local Wallpaper Engine library — video, scene (animated preview), and web wallpapers all come alive in the browser. In light theme a translucent white fog is layered in automatically, in dark theme a dimming overlay is applied, so fine text stays readable. The background layer is fully independent from the desktop Wallpaper Engine: changing wallpapers inside DSH never touches your desktop wallpaper, and vice versa.
 
-![设置面板 · 壁纸选项卡](docs/screenshots/settings-panel.jpg)
+![DSH interface in dark theme](docs/screenshots/overview-dark.jpg)
 
-![更多界面预览（一）](docs/screenshots/gallery-01.jpg)
+![More UI previews (1)](docs/screenshots/screenshot-01.jpg)
 
-![更多界面预览（二）](docs/screenshots/gallery-02.jpg)
+![Settings panel · Wallpaper tab](docs/screenshots/settings-panel.jpg)
 
-## 功能
+![More UI previews (2)](docs/screenshots/screenshot-02.jpg)
 
-- **三种壁纸来源**
-  - **内置壁纸**：10 张 Unsplash 高清图，即装即用，无需任何本地服务；
-  - **自定义上传**：本地图片 / 视频，存入 IndexedDB，刷新后保留；
-  - **WE 壁纸库**：只读接入本机 Wallpaper Engine 已安装壁纸（默认 `http://127.0.0.1:8088`），并按 Steam 真实订阅清单过滤——在 WE 里退订的壁纸不会残留。
-- **四种渲染**
-  - 静态图片（cover 铺满）；
-  - 视频（canvas 渲染、30 FPS 上限、无黑边无变形）；
-  - 场景（WE 官方预览：有 `preview.gif` 就全屏循环动画，只有 `preview.jpg` 就静态展示）；
-  - 网页（web 类型壁纸 iframe 原生渲染 `index.html`，浏览器里真跑起来）。
-- **五项调节**：浅色雾层 / 深色遮罩（随 DSH 主题自动切换）、背景模糊度（0–20px）、背景亮度（50–150%）、安全放大（0–10%，裁掉边缘黑边）。
-- **同步桌面壁纸**开关：只读跟随 WE 当前桌面壁纸（30 秒轮询）。
-- WE 库内筛选：类型（全部 / 视频 / 场景 / 网页）+ 分级（非18+ / 18+，18+ 卡片带红色角标，实时显示计数）。
-- 设置持久化到 localStorage；界面表面自动半透明化以透出背景。
+![More UI previews (3)](docs/screenshots/screenshot-03.jpg)
 
-## 安装
+## Features
 
-### 前提条件
+- **Three wallpaper sources**
+  - **Built-in wallpapers**: 10 high-res Unsplash images, ready to use with zero local services;
+  - **Custom uploads**: local images / videos, stored in IndexedDB and kept across refreshes. Videos get auto-generated first-frame thumbnails, and extension-based detection covers files whose MIME type the browser leaves empty (e.g. `.mkv` / `.mov`) — they now render as video instead of a black screen;
+  - **WE library**: read-only access to locally installed Wallpaper Engine wallpapers (default `http://127.0.0.1:8088`), filtered by the real Steam subscription list — unsubscribed wallpapers never linger.
+- **Playback queue (custom uploads + WE library)**: drag wallpapers from either source's grid into its queue and loop-play them, 1–10 minutes per item (both queues share one duration slider). Queue items support drag-to-reorder (with an insertion indicator), click-to-jump, per-item remove, and clear-all; queue contents, toggles and playback positions persist to localStorage. The custom queue accepts images / videos; the WE queue accepts video / scene / web / image wallpapers. Each queue is **sticky at the top of its tab**, so even with hundreds of wallpapers any tile is a short drag away.
+- **Four render modes**
+  - Static images (cover-fit);
+  - Videos (canvas rendering, 30 FPS cap, no letterboxing or distortion);
+  - Scenes (WE official preview: full-screen looping `preview.gif` when present, static `preview.jpg` otherwise);
+  - Web wallpapers (native iframe rendering of `index.html` in the browser).
+- **Five adjustments**: light fog / dark overlay (auto-switching with the DSH theme), background blur (0–20px), background brightness (50–150%), safe zoom (0–10% to crop edge letterboxing).
+- **View-only source tabs**: switching between 内置壁纸 / 自定义上传 / WE 壁纸库 only changes what the panel shows — the background stays untouched until you explicitly click a wallpaper, operate a queue, or enable 同步桌面壁纸 (which mutually excludes the WE queue).
+- **Sync desktop wallpaper** toggle: read-only follow of the current WE desktop wallpaper (30-second polling).
+- WE library filters: type (all / video / scene / web) + rating (all / safe / 18+; 18+ cards carry a red badge with live counts). The rating filter resets to **safe** every time the WE tab is opened.
+- Settings persist to localStorage; the UI surface auto-turns semi-transparent to reveal the background.
 
-- Windows / macOS / Linux，Node.js ≥ 20（`node -v` 检查）；
-- 已装好 DeepSeek Harness，且能用 `dsh web` 正常启动网页界面；
-- 仅「WE 壁纸库」来源需要 Windows + 本机 Wallpaper Engine（可选组件，见下文）。
+## Installation
 
-### 安装方式：官方 dsh 命令
+### Prerequisites
+
+- Windows / macOS / Linux with Node.js ≥ 20 (`node -v`);
+- A working DeepSeek Harness with `dsh web` running;
+- Only the WE library source needs Windows + a local Wallpaper Engine install (optional, see below).
+
+### Install via the official dsh command
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg
 ```
 
-### 可选组件：WE 壁纸库服务（Windows）
+> For local development from a checkout, link the repo instead:
+> `dsh plugin --profile web add link:<absolute-path-to-repo>` — subsequent `lib/client.js` edits apply after a plain page refresh (no server restart).
 
-「WE 壁纸库」来源需要 `wallpaper-engine-api/` 服务，它把 Wallpaper Engine 已安装壁纸列表以只读 HTTP API 暴露在 `127.0.0.1:8088`：
+### Optional: WE library service (Windows)
 
-1. 进入 `wallpaper-engine-api/` 目录，执行 `npm install`；
-2. 双击 `启动服务.bat`（首次运行会引导写入安装路径；也可用 `启动服务-静默.vbs` 静默启动）；
-3. 可选：双击 `设置开机自启.bat`，把静默启动脚本注册到注册表（`HKCU\...\Run`），登录 Windows 时后台自动启动；取消请双击 `取消开机自启.bat`（脚本直接引用本目录的 `启动服务-静默.vbs`，移动过目录后请重新设置一次）；
-4. 之后升级 / 重启服务一律双击 `重启服务(管理员).bat`：自动请求管理员权限、结束旧进程并静默重启，等待端口就绪（全程日志见 `restart-debug.log`）。
+The WE library source needs the `wallpaper-engine-api/` service, which exposes the installed Wallpaper Engine list as a read-only HTTP API on `127.0.0.1:8088`:
 
-服务**只读**：仅调用列表 / 当前壁纸查询，绝不触碰设置或播放接口；未检测到 WE 运行时也不会拉起 WE 主程序。列表按 Steam 真实订阅清单（`431960_subscriptions.vdf`）过滤——在 WE 里退订 / 本地禁用的壁纸即使文件夹残留也不会再出现，与 WE 界面一致。
+1. `cd wallpaper-engine-api && npm install`;
+2. Double-click `启动服务.bat` (the first run asks for the WE install path; `启动服务-静默.vbs` starts it silently);
+3. Optional: double-click `设置开机自启.bat` to register the silent starter in the registry (`HKCU\...\Run`) so it starts at login; `取消开机自启.bat` removes it (the scripts reference `启动服务-静默.vbs` in this directory — re-run them after moving the folder);
+4. For upgrades / restarts always double-click `重启服务(管理员).bat`: it requests admin rights, stops the old process, restarts silently and waits for the port (full log: `restart-debug.log`).
 
-> 验证：浏览器打开 `http://127.0.0.1:8088/health` 返回 JSON 即正常；插件侧打开 `http://127.0.0.1:3080/dsh-wallpaper-bg/health` 可看插件版本。端口 8088 是历史选择（8080 曾被 Jenkins 占用）；换端口用环境变量 `WEAPI_PORT`，并在插件设置面板里把基地址改成对应值。
+The service is **read-only**: it only queries the list / current wallpaper, never touches settings or playback, and never launches WE when the runtime is absent. The list is filtered by the real Steam subscription manifest (`431960_subscriptions.vdf`) — unsubscribed or locally disabled wallpapers disappear even if their folders linger, matching the WE UI.
 
-## 设置面板说明
+> Verify: open `http://127.0.0.1:8088/health` in a browser — a JSON response means it is up; the plugin side reports its own version at `http://127.0.0.1:3080/dsh-wallpaper-bg/health`. Port 8088 is a historical choice (8080 was once taken by Jenkins); switch ports via the `WEAPI_PORT` env var and update the base URL in the plugin settings.
 
-| 项 | 说明 |
+## Settings panel
+
+| Item | Description |
 | --- | --- |
-| 内置壁纸 / 自定义上传 / WE 壁纸库 | 来源切换（每行 4 张缩略图） |
-| 上传自定义壁纸 | 图片 / 视频，存入 IndexedDB |
-| WE 基地址 + 刷新 | WE API 地址（默认 `http://127.0.0.1:8088`） |
-| 类型筛选 | 全部 / 视频 / 场景 / 网页，按壁纸真实类型过滤 WE 壁纸库 |
-| 分级筛选 | 全部 / 非18+ / 18+（基于 project.json 的 `contentrating`：18+ = Mature + Questionable），18+ 卡片带红色角标，面板实时显示筛选计数 |
-| 同步桌面壁纸 | 只读跟随 WE 当前桌面壁纸 |
-| 浅色雾层 / 深色遮罩 | 0–100%，随 DSH 主题自动切换：浅色外观铺半透明白雾垫在内容下方提升细字可读性，深色外观压黑遮罩 |
-| 背景模糊度 / 背景亮度 | 0–20px / 50–150% |
-| 安全放大 | 0–10%，按比例放大背景以裁掉边缘黑边 |
-| 恢复默认 | 一键重置全部设置 |
+| Built-in / Custom upload / WE library | Source tabs: switching tabs only changes the panel view; the background applies only on explicit selection (click a wallpaper, queue actions, or sync desktop) |
+| Upload custom wallpapers | Images / videos, stored in IndexedDB; videos get auto-generated first-frame thumbnails |
+| Playback queue | Independent queue per source, sticky at the top of its tab: drag wallpapers in, loop-play at 1–10 min per item (shared duration slider), drag-to-reorder, click-to-jump, × to remove, clear to reset |
+| WE base URL + refresh | WE API address (default `http://127.0.0.1:8088`) |
+| Type filter | all / video / scene / web, by the wallpaper's real type |
+| Rating filter | all / safe / 18+ (from `contentrating` in project.json: 18+ = Mature + Questionable), 18+ cards carry a red badge with live counts; resets to **safe** every time the WE tab is entered |
+| Sync desktop wallpaper | Read-only follow of the current WE desktop wallpaper (mutually exclusive with the WE queue) |
+| Light fog / dark overlay | 0–100%, auto-switching with the DSH theme: translucent white fog in light theme to lift fine text, dark overlay in dark theme |
+| Background blur / brightness | 0–20px / 50–150% |
+| Safe zoom | 0–10% scale-up to crop edge letterboxing |
+| Reset to defaults | One-click restore of all settings |
 
-## 原理
+## How it works
 
-本包是 DSH **静态双半插件**，并作为 **profile 补丁层（bundle）**组合进 DSH 的 host 平面：
+This package is a DSH **static two-half plugin**, composed into the DSH host plane as a **profile bundle layer**:
 
-| 半边 | 文件 | 职责 |
+| Half | File | Responsibility |
 | --- | --- | --- |
-| 宿主半（Node） | `lib/host.js` | 注册同源路由：`/dsh-wallpaper-bg/asset`（本地文件流式代理，支持 Range）、`/dsh-wallpaper-bg/we`（WE API 只读代理，带缓存）、`/dsh-wallpaper-bg/health` |
-| 浏览器半 | `lib/client.js` | 单文件 client bundle（`window.__ModuleLoader__` 工厂形式），注入背景层与遮罩、注册设置面板「壁纸」选项卡 |
-| 组合层 | `cordis.patch.yml` | `dsh.bundle` 补丁：把插件行插入 profile 组合的 host 平面，**随 `dsh web` 启动即生效**，首次加载页面就带背景 |
+| Host half (Node) | `lib/host.js` | Registers same-origin routes: `/dsh-wallpaper-bg/asset` (streaming local-file proxy with Range support), `/dsh-wallpaper-bg/we` (read-only WE API proxy with caching), `/dsh-wallpaper-bg/health` |
+| Browser half | `lib/client.js` | Single-file client bundle (`window.__ModuleLoader__` factory form): injects the background layer and overlay, registers the 壁纸 settings tab |
+| Composition | `cordis.patch.yml` | `dsh.bundle` patch: inserts the plugin row into the profile composition's host plane — active on `dsh web` startup, the first page load already carries the background |
 
-两端零构建：`lib/client.js` 是手写的单文件 bundle，无需任何打包工具；另附 `dsh-wallpaper-bg` CLI（`install` / `status` / `uninstall`）完成一键安装。
+Zero build on both ends: `lib/client.js` is a hand-written single-file bundle, no bundler required; a `dsh-wallpaper-bg` CLI (`install` / `status` / `uninstall`) provides one-command setup.
 
-## 常见问题
+## FAQ
 
-- **场景类壁纸不动？** WE 场景壁纸是 `scene.pkg` 编译字节码（场景逻辑、shader、粒子系统都在里面），只有 WE 自己的引擎能渲染，浏览器无法执行——这是纯浏览器的上限，任何插件都一样。插件会显示 WE 官方预生成的预览：有 `preview.gif` 就全屏循环播放动画，只有 `preview.jpg` 就只能显示静态图。**想要完整特效**：用 WE 托盘菜单的屏幕录制（或 OBS）把该场景录 30 秒左右导出成 MP4，再通过「自定义上传」传进来，浏览器里就是 100% 保真的动态壁纸。
-- **网页类壁纸（web 类型）能正常显示吗？** 能——web 壁纸本来就是 HTML/JS 网页，插件会用 iframe 全屏原生渲染 `index.html` 及其相对资源（由 WE API 的 `/files/<id>/...` 目录路由只读提供，仅限已订阅壁纸目录）。注意：背景层不拦截鼠标，所以壁纸的鼠标交互（点击、拖拽）不会生效，仅视觉效果；依赖 WE 私有 JS 接口的音频可视化可能不发声。
-- **视频有黑边？** 用「安全放大」拉 2–3% 即可裁掉画面自带的黑边（渲染层的 cover 裁剪已保证不自造黑边）。
-- **改了代码不生效？** 改 `lib/client.js` 或 `lib/host.js` 后重启 DSH（客户端 bundle 按内容哈希进 boot graph，新增/移除插件行需要重启）。
-- **WE 壁纸库报错？** 确认 `wallpaper-engine-api` 服务在 8088 端口运行（浏览器访问 `http://127.0.0.1:8088/health` 验证），且插件设置里的基地址一致。
-- **在 WE 里删掉的壁纸还在插件里？** 服务会按 Steam 订阅清单过滤，退订的壁纸不再列出；若服务还是旧版本（`/health` 没有 `subscriptionsFile` 字段），双击 `重启服务(管理员).bat` 升级，然后点插件里的「刷新」。
+- **Scene wallpapers don't move?** WE scene wallpapers are compiled `scene.pkg` bytecode (scene logic, shaders, particles) that only WE's own engine can render — the browser can't execute them, and that's a hard browser limit every plugin shares. The plugin shows WE's official preview instead: full-screen looping `preview.gif` when present, static `preview.jpg` otherwise. **For full fidelity**: use WE's tray-menu screen recorder (or OBS) to record ~30 seconds of the scene to MP4, upload it via custom uploads, and it plays 100% faithfully in the browser.
+- **Do web-type wallpapers render?** Yes — web wallpapers are plain HTML/JS pages, rendered natively in a full-screen iframe (`index.html` plus relative assets, served read-only by the WE API's `/files/<id>/...` route, restricted to subscribed wallpaper directories). Note the background layer never intercepts the mouse, so the wallpaper's own interactions (click / drag) don't work — visual only; audio visualizers relying on WE's private JS API may stay silent.
+- **Videos have black bars?** Pull 安全放大 (safe zoom) to 2–3% to crop the video's own letterboxing (the cover-crop render already guarantees no self-made bars).
+- **My uploaded video shows a black screen / black tile?** Videos whose MIME type the browser leaves empty (common for `.mkv` / `.mov`) are now detected by extension and rendered as video; every video upload also gets an auto-generated first-frame thumbnail. If a specific file is still black, its codec is likely unsupported by the browser.
+- **Code changes don't take effect?** For `lib/client.js` / `lib/host.js` content edits, a plain page refresh (F5) is enough — client bundles are read fresh from disk per request (`cache-control: no-cache`), so no server restart is required. A DSH restart is only needed when the plugin set changes (adding / removing plugin rows or editing `dsh.client` declarations).
+- **WE library errors?** Confirm the `wallpaper-engine-api` service is running on port 8088 (`http://127.0.0.1:8088/health` in a browser) and the base URL in plugin settings matches.
+- **Wallpapers removed in WE still show up?** The service filters by the Steam subscription list, so unsubscribed wallpapers disappear; if the service is outdated (`/health` lacks the `subscriptionsFile` field), double-click `重启服务(管理员).bat` to upgrade, then click 刷新 in the plugin.
 
-## 开源
+## License
 
-MIT License，见 [LICENSE](LICENSE)。欢迎 issue / PR。
+MIT License, see [LICENSE](LICENSE). Issues / PRs welcome.
 
-`legacy/` 目录存放 v0.1.0 之前的动态插件（Cordis dynamic package）时代源码，仅作归档。
+`legacy/` holds the pre-v0.1.0 dynamic-plugin (Cordis dynamic package) source, archived for reference only.
