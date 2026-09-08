@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-> v0.3.3 · MIT License
+> v0.3.7 · MIT License
 
 English | [中文](README.zh.md)
 
@@ -28,7 +28,12 @@ A static two-half plugin that puts an **independent animated wallpaper layer** u
   - Videos (canvas rendering, 30 FPS cap, no letterboxing or distortion);
   - Scenes (WE official preview: full-screen looping `preview.gif` when present, static `preview.jpg` otherwise);
   - Web wallpapers (native iframe rendering of `index.html` in the browser).
-- **Five adjustments**: light fog / dark overlay (auto-switching with the DSH theme), background blur (0–20px), background brightness (50–150%), safe zoom (0–10% to crop edge letterboxing).
+- **Four adjustments**: light fog / dark overlay (auto-switching with the DSH theme), background blur (0–20px), background brightness (50–150%), safe zoom (0–10% to crop edge letterboxing).
+- **Black-flash-free switching**: every wallpaper change (including queue rotation) cross-fades two stacked layers — the incoming wallpaper preloads and finishes decoding / first-frame playback in its own layer, then blends with the outgoing one over ~0.42s, and the old layer is only removed after it has faded out. Applies to all four render modes (image, video, scene, web), so no frame of the transition is ever empty.
+- **Next-item warm-up**: while a queue item is on screen, the next one is fetched ahead of time (network images downloaded and decoded, WE videos buffered in a real `<video>` element, custom uploads read from IndexedDB with an objectURL ready), so the cross-fade starts almost immediately instead of waiting on the network.
+- **White-intro skipping**: some wallpaper videos literally open with a pure-white intro (e.g. the Arknights "喧闹法则" video is entirely white for its first 2 seconds). The warm-up phase probes for the first non-white frame and playback starts there, so switching to such a wallpaper no longer shows a blank white screen.
+- **No leftover background decoding**: when an outgoing layer fades out, its frame-pump interval is stopped and its video is fully released (`pause()` plus detaching `src`), so rotating the queue keeps exactly one decoder alive no matter how many times it switches. Measured over 6 consecutive switches: a steady 58–60 fps (before the fix it decayed from 59.7 to 12.2 fps).
+- **4K videos no longer cost performance**: the video layer uses `<video object-fit: cover>` and lets the compositor (GPU) do the scaling, instead of re-drawing every frame onto a viewport-sized canvas (a single 4K frame grab costs 20–40 ms); the 30 fps frame-pump timer is gone too, and an identity filter (`blur(0px) brightness(100%)`) — which silently disables GPU compositing — is no longer applied. Measured on a 4K wallpaper: **22–27 fps → 57–60 fps**, long frames per second from 68–72 down to 3–9.
 - **View-only source tabs**: switching between 内置壁纸 / 自定义上传 / WE 壁纸库 only changes what the panel shows — the background stays untouched until you explicitly click a wallpaper, operate a queue, or enable 同步桌面壁纸 (which mutually excludes the WE queue).
 - **Sync desktop wallpaper** toggle: read-only follow of the current WE desktop wallpaper (30-second polling).
 - WE library filters: type (all / video / scene / web) + rating (all / safe / 18+; 18+ cards carry a red badge with live counts). The rating filter resets to **safe** every time the WE tab is opened.
