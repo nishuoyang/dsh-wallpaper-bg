@@ -9,7 +9,9 @@
     .\scripts\release.ps1 -DryRun              # 只做检查与预览，不产生任何改动
     .\scripts\release.ps1 -SkipGitHub          # 不发 GitHub Release
     .\scripts\release.ps1 -SkipNpm             # 不发布 npm
+    .\scripts\release.ps1 -SkipPush            # 不推送到远端（仅本地提交 + 打标签）
     .\scripts\release.ps1 -Yes                 # 跳过二次确认
+    .\scripts\release.ps1 -Message "..."       # 自定义提交 / 标签说明
 
   说明：
   - 版本号只认 package.json；-Version 会同步改写 package.json / lib/host.js /
@@ -47,6 +49,24 @@ function Fail($msg) { Write-Host "`n[x] $msg" -ForegroundColor Red; exit 1 }
 function Run($cmd, $args) {
   & $cmd @args
   if ($LASTEXITCODE -ne 0) { Fail "命令失败（exit $LASTEXITCODE）：$cmd $($args -join ' ')" }
+}
+# 静默执行 npm：吞掉 stderr（npm 把告警和「版本不存在」都写到 stderr，在
+# $ErrorActionPreference='Stop' 下会被当成终止错误），返回 @{ ok; out; lines }
+# out 只取最后一行有效输出，避免 PowerShell 的 NativeCommandError 噪音混进来
+function NpmQuiet([string[]]$npmArgs) {
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try {
+    $all = @(& npm @npmArgs 2>&1 | Out-String -Stream | Where-Object { $_ -match '\S' })
+    # 只滤掉 PowerShell 的 NativeCommandError 噪音，保留 npm 自己的输出
+    $clean = @($all | Where-Object {
+      $_ -notmatch '^(node\.exe\s*:|At line:|\+\s|CategoryInfo\s*:|FullyQualifiedErrorId\s*:)'
+    })
+    $last = if ($clean.Count -gt 0) { $clean[-1].Trim() } else { '' }
+    return @{ ok = ($LASTEXITCODE -eq 0); out = $last; lines = $clean }
+  } finally {
+    $ErrorActionPreference = $prev
+  }
 }
 
 # ---------- 读取版本与仓库信息 ----------
@@ -134,14 +154,14 @@ if ($remoteTag) { Fail "远端已存在标签 $tag，无法重复发布" }
 Ok "远端无标签 $tag"
 
 if (-not $SkipNpm) {
-  $published = (& npm view "$name@$target" version 2>$null)
-  if ($LASTEXITCODE -eq 0 -and $published -and ($published -join '').Trim() -eq $target) {
+  $published = NpmQuiet @('view', "$name@$target", 'version')
+  if ($published.ok -and $published.out -eq $target) {
     Fail "npm 上已存在 $name@$target，无法重复发布"
   }
   Ok "npm 上尚无 $target"
-  $whoami = (& npm whoami 2>$null)
-  if ($LASTEXITCODE -ne 0 -or -not $whoami) { Fail 'npm 未登录，请先 npm login' }
-  Ok "npm 已登录：$($whoami -join '')"
+  $who = NpmQuiet @('whoami')
+  if (-not $who.ok -or -not $who.out) { Fail 'npm 未登录，请先 npm login' }
+  Ok "npm 已登录：$($who.out)"
 }
 
 if (-not $SkipGitHub) {
@@ -154,12 +174,13 @@ if (-not $SkipGitHub) {
 
 # 打包预检：确认将要发布的内容
 Step "打包预检（npm pack --dry-run）"
-$packOut = (& npm pack --dry-run 2>&1)
-if ($LASTEXITCODE -ne 0) { Fail "npm pack 预检失败：`n$packOut" }
+$pack = NpmQuiet @('pack', '--dry-run')
+if (-not $pack.ok) { Fail "npm pack 预检失败：`n$($pack.lines -join "`n")" }
+$packOut = $pack.lines
 $fileCount = ($packOut | Select-String -Pattern 'total files' | Select-Object -First 1)
 $pkgSize = ($packOut | Select-String -Pattern 'package size' | Select-Object -First 1)
-Info ($fileCount -join '').Trim()
-Info ($pkgSize -join '').Trim()
+if ($fileCount) { Info ($fileCount -join '').Trim() }
+if ($pkgSize) { Info ($pkgSize -join '').Trim() }
 $hasClient = ($packOut | Select-String -Pattern 'lib/client\.js').Count -gt 0
 $hasHost = ($packOut | Select-String -Pattern 'lib/host\.js').Count -gt 0
 if (-not ($hasClient -and $hasHost)) { Fail '打包内容缺少 lib/client.js 或 lib/host.js' }
@@ -229,12 +250,13 @@ if ($SkipNpm) {
   Warn '已按 -SkipNpm 跳过'
 } else {
   Step "发布到 npm"
-  $pubOut = (& npm publish --access public 2>&1)
-  $pubCode = $LASTEXITCODE
-  $pubOut | Select-Object -Last 6 | ForEach-Object { Info $_ }
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try { $pubOut = (& npm publish --access public 2>&1 | Out-String); $pubCode = $LASTEXITCODE } finally { $ErrorActionPreference = $prev }
+  ($pubOut -split "`r?`n" | Where-Object { $_ -match '\S' } | Select-Object -Last 6) | ForEach-Object { Info $_ }
   if ($pubCode -ne 0) { Fail "npm publish 失败（exit $pubCode）" }
-  $check = (& npm view "$name@$target" version 2>$null)
-  if (($check -join '').Trim() -ne $target) { Fail "npm 上未能确认 $target 已发布" }
+  $check = NpmQuiet @('view', "$name@$target", 'version')
+  if ($check.out -ne $target) { Fail "npm 上未能确认 $target 已发布" }
   Ok "npm 已发布：$name@$target"
 }
 
@@ -250,10 +272,8 @@ if ($SkipGitHub) {
     $asset = $null
     if (-not $SkipNpm) {
       Push-Location $tmp
-      try {
-        & npm pack "$name@$target" 2>$null | Out-Null
-        $asset = Get-ChildItem $tmp -Filter '*.tgz' | Select-Object -First 1
-      } finally { Pop-Location }
+      try { NpmQuiet @('pack', "$name@$target") | Out-Null } finally { Pop-Location }
+      $asset = Get-ChildItem $tmp -Filter '*.tgz' | Select-Object -First 1
       if ($asset) { Ok "已取得 npm 产物：$($asset.Name)（$([math]::Round($asset.Length / 1KB, 1)) KB）" }
       else { Warn '未能取得 npm 产物，Release 将不带附件' }
     } else {

@@ -111,4 +111,16 @@ Zero build on both ends: `lib/client.js` is a hand-written single-file bundle, n
 
 MIT License, see [LICENSE](LICENSE). Issues / PRs welcome.
 
+### Releasing
+
+The repo ships a one-shot release script, `scripts/release.ps1`, which fixes the whole flow: version check → pack preflight → commit → tag → push → npm publish → GitHub Release (with the tarball attached).
+
+```powershell
+.\scripts\release.ps1 -DryRun              # rehearse: checks only, no changes
+.\scripts\release.ps1 -Version 0.3.8       # bump version and release
+.\scripts\release.ps1                      # release the version in package.json
+```
+
+Preflight refuses duplicate releases (tag already present locally or on the remote, version already on npm) and requires a matching `CHANGELOG.md` entry — the Release notes are taken from that entry. Optional flags: `-SkipNpm` / `-SkipGitHub` / `-SkipPush` / `-Yes`.
+
 `legacy/` holds the pre-v0.1.0 dynamic-plugin (Cordis dynamic package) source, archived for reference only.

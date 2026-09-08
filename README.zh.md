@@ -111,4 +111,16 @@ dsh plugin --profile web add dsh-wallpaper-bg
 
 MIT License，见 [LICENSE](LICENSE)。欢迎 issue / PR。
 
+### 发布流程
+
+仓库自带一键发布脚本 `scripts/release.ps1`，固化「版本校验 → 打包预检 → 提交 → 打标签 → 推送 → npm publish → GitHub Release（附 tarball）」：
+
+```powershell
+.\scripts\release.ps1 -DryRun              # 先预演：只检查不产生改动
+.\scripts\release.ps1 -Version 0.3.8       # 改版本号并发布
+.\scripts\release.ps1                      # 发布 package.json 里的当前版本
+```
+
+预检会拒绝重复发布（本地 / 远端已有标签、npm 上已有该版本），并校验 `CHANGELOG.md` 已写好对应版本条目——Release 说明直接取自该条目。另有 `-SkipNpm` / `-SkipGitHub` / `-SkipPush` / `-Yes` 可选。
+
 `legacy/` 目录存放 v0.1.0 之前的动态插件（Cordis dynamic package）时代源码，仅作归档。
