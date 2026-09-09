@@ -46,9 +46,15 @@ function Info($msg) { Write-Host "    $msg" }
 function Ok($msg) { Write-Host "    [OK] $msg" -ForegroundColor Green }
 function Warn($msg) { Write-Host "    [!] $msg" -ForegroundColor Yellow }
 function Fail($msg) { Write-Host "`n[x] $msg" -ForegroundColor Red; exit 1 }
-function Run($cmd, $args) {
-  & $cmd @args
-  if ($LASTEXITCODE -ne 0) { Fail "命令失败（exit $LASTEXITCODE）：$cmd $($args -join ' ')" }
+# 注意：参数名不能叫 $args —— 它是 PowerShell 自动变量，作为参数名会被静默忽略
+# （调用时传进来的数组直接丢掉，& $cmd @args 变成裸命令，git 会打印帮助并失败）
+function Run($cmd, $argList) {
+  # git / npm 会把进度、警告写到 stderr，在 $ErrorActionPreference='Stop' 下会被
+  # 当成终止错误（NativeCommandError）——这里只认退出码，不把 stderr 当失败。
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = 'Continue'
+  try { & $cmd @argList } finally { $ErrorActionPreference = $prev }
+  if ($LASTEXITCODE -ne 0) { Fail "命令失败（exit $LASTEXITCODE）：$cmd $($argList -join ' ')" }
 }
 # 静默执行 npm：吞掉 stderr（npm 把告警和「版本不存在」都写到 stderr，在
 # $ErrorActionPreference='Stop' 下会被当成终止错误），返回 @{ ok; out; lines }

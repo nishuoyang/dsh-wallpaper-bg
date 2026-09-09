@@ -1,0 +1,4 @@
+{
+  "//": "场景渲染器模块为纯 ESM（上游 dsh-plugin-wallpaper-engine 的 lib/we-renderer）；此文件让 Node 明确按 ESM 解析，避免 MODULE_TYPELESS_PACKAGE_JSON 警告。",
+  "type": "module"
+}
