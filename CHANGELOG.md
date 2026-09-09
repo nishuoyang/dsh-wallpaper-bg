@@ -2,6 +2,12 @@
 
 本文件记录 dsh-wallpaper-bg 的用户可见变更。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [Unreleased]
+
+### 修复
+
+- `scripts/release.ps1`（发布工具，不进 npm 包）：`Run()` 的参数名用了 PowerShell 自动变量 `$args`，调用时传进去的数组被静默丢弃（`git` 变成裸命令、打印帮助），发布在提交步骤就中断；同时 `$ErrorActionPreference = 'Stop'` 会把 git / npm 写到 stderr 的正常进度（`To https://...`、`LF will be replaced by CRLF`）当成终止错误。两处都已修。另外 Release 附件改用 `npm pack --pack-destination` 获取并在失败时打印原因（0.3.11 首次发布时因此漏掉了 .tgz，已补传），Release 链接也不再打印多余的 `.Trim()`。
+
 ## [0.3.11] - 2026-09-09
 
 ### 新增

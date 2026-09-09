@@ -277,8 +277,10 @@ if ($SkipGitHub) {
   try {
     $asset = $null
     if (-not $SkipNpm) {
-      Push-Location $tmp
-      try { NpmQuiet @('pack', "$name@$target") | Out-Null } finally { Pop-Location }
+      # 用 --pack-destination 指定输出目录（不依赖 Push-Location）；失败时打印原因，
+      # 别像以前那样静默变成「Release 不带附件」。
+      $packOut = NpmQuiet @('pack', "$name@$target", '--pack-destination', $tmp)
+      if (-not $packOut.ok) { Warn "npm pack 失败：$($packOut.out)" }
       $asset = Get-ChildItem $tmp -Filter '*.tgz' | Select-Object -First 1
       if ($asset) { Ok "已取得 npm 产物：$($asset.Name)（$([math]::Round($asset.Length / 1KB, 1)) KB）" }
       else { Warn '未能取得 npm 产物，Release 将不带附件' }
@@ -317,7 +319,7 @@ npm install ./$($asset.Name)
     if ($asset) { $ghArgs += $asset.FullName }
     $ghOut = (& gh @ghArgs 2>&1)
     if ($LASTEXITCODE -ne 0) { Fail "gh release create 失败：`n$ghOut" }
-    Ok "Release 已创建：$($ghOut -join '').Trim()"
+    Ok ("Release 已创建：" + ($ghOut -join '').Trim())
   } finally {
     Remove-Item $tmp -Recurse -Force -ErrorAction SilentlyContinue
   }
