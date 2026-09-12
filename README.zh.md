@@ -68,11 +68,13 @@ dsh plugin --profile web add dsh-wallpaper-bg
 
 服务**只读**：仅调用列表 / 当前壁纸查询，绝不触碰设置或播放接口；未检测到 WE 运行时也不会拉起 WE 主程序。列表按 Steam 真实订阅清单（`431960_subscriptions.vdf`）过滤——在 WE 里退订 / 本地禁用的壁纸即使文件夹残留也不会再出现，与 WE 界面一致。
 
-除列表 / 预览 / 网页文件路由外，服务 0.2.7 起还提供**场景帧渲染**：`GET /scene-frame/<id>?w=&h=&t=&refresh=1` 返回该场景壁纸的完整场景帧 PNG（`w` 默认 2560，`h` 缺省按场景正交比例；`t` 为渲染时刻，默认 2.5s；`refresh=1` 强制重渲染；`auto=0` 关闭「自动避开眨眼闭眼相位」，见下）。渲染在 worker 线程执行并落盘缓存，响应头 `X-Scene-Mode` 为 `scene`（完整场景渲染）或 `main-texture`（回退主纹理），`X-Scene-Still-Time` 为实际使用的时刻。视频纹理场景会先用 ffmpeg 抽一帧（可选依赖，见下）。缓存目录：`~/.dsh-wallpaper-bg/cache/scene-frames/` 与 `.../video-frames/`（`DSH_WB_CACHE_DIR` 可覆盖）。
+除列表 / 预览 / 网页文件路由外，服务还提供**场景帧渲染**：`GET /scene-frame/<id>?w=&h=&t=&refresh=1` 返回该场景壁纸的完整场景帧 PNG（`w` 默认 2560，`h` 缺省按场景正交比例；`t` 为渲染时刻，默认 2.5s；`refresh=1` 强制重渲染；`auto=0` 关闭「自动避开眨眼闭眼相位」，见下）。渲染在 worker 线程执行并落盘缓存，响应头 `X-Scene-Mode` 为 `scene`（完整场景渲染）或 `main-texture`（回退主纹理），`X-Scene-Still-Time` 为实际使用的时刻。视频纹理场景会先用 ffmpeg 抽一帧（可选依赖，见下）。缓存目录：`~/.dsh-wallpaper-bg/cache/scene-frames/` 与 `.../video-frames/`（`DSH_WB_CACHE_DIR` 可覆盖）。
+
+**场景渲染默认关闭**（服务 0.3.1 起）：场景帧渲染与动画烘焙会把结果缓存到 `~/.dsh-wallpaper-bg`，为避免只装壁纸插件的用户被自动创建该目录，`/scene-frame`、`/scene-anim` 默认返回 `403`、服务启动与 `/health` 也**不会**创建缓存目录，场景壁纸由插件端回退到工坊预览图。需要完整场景帧 / 烘焙动画时，在 `we-api.config`（或环境变量）里设置 `WE_SCENE_RENDER=1` 并重启服务（首次运行 `启动服务.bat` 的向导已默认写入 `WE_SCENE_RENDER=0`；旧配置文件没有该键 = 默认关）。
 
 服务 0.3.0 起新增**场景动画烘焙**：`GET /scene-anim/<id>?w=&h=&fps=&dur=&bake=1&cancel=1` 入队/查询异步任务（返回 `{state: idle|queued|running|done|static|error, done, total, percent, meta}`），`GET /scene-anim/<id>/video.mp4` 提供烘焙好的无缝循环 MP4（带 Range + ETag），`GET /scene-anim/status` 列出全部任务。逐帧渲染写临时目录（不占内存），按帧签名自动挑循环点，ffmpeg 编码 H.264（`yuv420p` + `faststart`）。缓存目录：`~/.dsh-wallpaper-bg/cache/scene-anim/`（`<key>.mp4` + `<key>.json`）。同一时刻只跑一个任务，其余排队。
 
-> 验证：浏览器打开 `http://127.0.0.1:8088/health` 返回 JSON 即正常（含 `"sceneRender": 1` 表示支持场景渲染，`"puppetAnim": 2` 表示骨骼动画已完整——旧版角色眼睛会闭着或错位）；插件侧打开 `http://127.0.0.1:3080/dsh-wallpaper-bg/health` 可看插件版本。端口 8088 是历史选择（8080 曾被 Jenkins 占用）；换端口用环境变量 `WEAPI_PORT`，并在插件设置面板里把基地址改成对应值。
+> 验证：浏览器打开 `http://127.0.0.1:8088/health` 返回 JSON 即正常（`"sceneRender"` 默认是 `0`=场景渲染关闭；设置 `WE_SCENE_RENDER=1` 后为 `1`=支持场景渲染；`"puppetAnim": 2` 表示骨骼动画已完整——旧版角色眼睛会闭着或错位）；插件侧打开 `http://127.0.0.1:3080/dsh-wallpaper-bg/health` 可看插件版本。端口 8088 是历史选择（8080 曾被 Jenkins 占用）；换端口用环境变量 `WEAPI_PORT`，并在插件设置面板里把基地址改成对应值。
 
 ## 设置面板说明
 
@@ -106,9 +108,10 @@ dsh plugin --profile web add dsh-wallpaper-bg
 
 ## 常见问题
 
+- **场景类壁纸显示的是预览图而不是完整场景帧？** 插件 0.3.12 起，WE API 服务的**场景渲染默认关闭**（`WE_SCENE_RENDER`，默认 `0`）——关闭时不创建 `~/.dsh-wallpaper-bg` 缓存目录，场景壁纸回退工坊预览图。需要完整场景帧 / 烘焙动画：编辑 `wallpaper-engine-api/we-api.config` 加一行 `WE_SCENE_RENDER=1`，然后双击 `重启服务(管理员).bat`。
 - **场景类壁纸不动？** WE 场景壁纸是 `scene.pkg` 编译字节码（场景逻辑、shader、粒子系统都在里面），浏览器无法直接执行。本插件 0.3.9 起改为**在 WE API 服务里用纯 JS 场景渲染器把 `scene.pkg` 真正渲染出来**（借鉴 [dsh-plugin-wallpaper-engine](https://github.com/elysia395/dsh-wallpaper-engine) 的 `lib/we-renderer/`），渲染结果是**一张完整场景帧静态图**（不是动画），首次渲染 8–35 秒、之后走磁盘缓存秒开。实测本机 134 张场景壁纸：109 张输出完整场景帧、21 张回退主纹理、4 张回退工坊预览图。
   - **想让它真的动起来？** 0.3.11 起可以把场景**烘焙成无缝循环视频**（设置 → 壁纸 → 「场景壁纸播放烘焙动画」/「烘焙动画」按钮）：服务端逐帧渲染 → 自动检测循环点 → ffmpeg 编码 MP4，浏览器原生 60fps 播放。1080p 下普通场景约 1–4 分钟、重效果场景 5–25 分钟，后台进行、烘焙一次永久缓存；打开「选中时自动烘焙」可省掉点按钮。鼠标视差 / 音频响应 / 可触摸类场景无法烘焙。
-  - **需要 WE API 服务 0.2.7**（骨骼动画 / 眼睛修复与颜色混合 / 质量门禁修复需要 0.2.9，场景动画需要 0.3.0）：`http://127.0.0.1:8088/health` 应含 `"sceneRender": 1`；升级后双击 `wallpaper-engine-api/重启服务(管理员).bat`。旧版服务下场景壁纸自动退回原来的 `preview.gif` / `preview.jpg` 显示。
+  - **需要 WE API 服务 0.2.7+**（骨骼动画 / 眼睛修复与颜色混合 / 质量门禁修复需要 0.2.9，场景动画需要 0.3.0）：`http://127.0.0.1:8088/health` 应含 `"sceneRender": 1`。**服务 0.3.1 起场景渲染默认关闭**：`/health` 默认是 `"sceneRender": 0`，需在 `wallpaper-engine-api/we-api.config` 加一行 `WE_SCENE_RENDER=1` 再双击 `重启服务(管理员).bat`。未开启 / 旧版服务下场景壁纸自动退回原来的 `preview.gif` / `preview.jpg` 显示。
   - **角色眼睛闭着 / 眼睛位置不对？** 0.3.10 已修（需要服务 0.2.8，`/health` 含 `"puppetAnim": 2`）：原来 MDLA 骨骼动画头靠扫描 `30.0f` 浮点特征定位，fps≠30 的模型动画整段丢失；动画帧里的缩放（眨眼就靠眼睑骨骼 `scaleY` 收缩）也被忽略。修好后角色会按动画摆姿势、眨眼。另外壁纸当背景只取一帧，如果这一帧正好落在闭眼相位，看起来仍像「没有眼睛」——现在服务会**自动避开闭眼时刻**（`X-Scene-Still-Time` 报出实际时刻，`&auto=0` 可关闭）。
   - **视频纹理场景**（主画面是内嵌 MP4 或独立视频文件的场景）：服务会用 **ffmpeg 抽一帧**再渲染。ffmpeg 来自 `WE_FFMPEG` / `FFMPEG_PATH` 环境变量或系统 PATH；没装 ffmpeg 也能用，只是这类场景会退回预览图。
   - **壁纸上盖着一大块黑色矩形 / 菱形？** 0.3.10 已修（需要服务 0.2.9）。镜头光晕这类素材本身就是「黑底 + 一圈彩虹弧」，完全靠 `colorBlendMode`（屏幕 / 亮化 / 叠加）把黑底消掉；而渲染器的**旋转绘制分支**没有混合模式参数，于是每个「旋转 + 有混合模式」的图层都被当成不透明矩形画出来——那个黑菱形就是旋转 42.6° 的镜头光晕层。本机 134 张场景里有 26 张含这类图层。同一版还堵住了「渲染成功但其实是白屏 / 灰屏」的情况：这类退化帧不再显示，改为回退主纹理或工坊预览图，并且会被负缓存，重复加载秒回。

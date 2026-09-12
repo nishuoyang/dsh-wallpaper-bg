@@ -2,7 +2,16 @@
 
 本文件记录 dsh-wallpaper-bg 的用户可见变更。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-## [Unreleased]
+## [0.3.12] - 2026-09-10
+
+### 变更
+
+- **场景类壁纸渲染加总开关，默认关**：场景帧渲染（`/scene-frame`）与动画烘焙（`/scene-anim`）现在由 `WE_SCENE_RENDER` 控制（环境变量或 `we-api.config`，`1/true/on` 开启），**默认关闭**。关闭时服务启动、`/health`、列表接口都不会再创建 `~/.dsh-wallpaper-bg` 缓存目录，场景路由直接返回 `403`，插件端把场景壁纸回退到工坊预览图（`preview.gif` / `preview.jpg`）——只装壁纸插件、不打算用场景渲染的用户不会再被自动生成 `C:\Users\<用户名>\.dsh-wallpaper-bg`。需要完整场景帧 / 烘焙动画时，在 `wallpaper-engine-api/we-api.config` 里加一行 `WE_SCENE_RENDER=1` 并重启服务（首次运行 `启动服务.bat` 的向导已默认写入 `WE_SCENE_RENDER=0`）。
+  - 服务 `/health` 与 `/api/wallpapers` 响应新增/如实上报 `sceneRender: 0|1`（关闭时 `puppetAnim` / `sceneAnim` 同为 0、`sceneFrameCache` 为 `null`），插件宿主半把该能力位透传给客户端——关闭时客户端不再发起注定失败的 `/scene-frame` 请求，设置面板的烘焙区块改为提示「在 we-api.config 设置 WE_SCENE_RENDER=1」。
+  - 配置方式沿用现有约定：环境变量 > `we-api.config`（键名 `WE_SCENE_RENDER`）。旧配置文件没有该键 = 默认关；升级后想继续用场景渲染的用户需显式开启一次。
+  - **已有缓存目录可手动删除**：`~/.dsh-wallpaper-bg` 只缓存渲染产物，删除不影响插件其它功能（图片 / 视频 / 网页壁纸不依赖它）。
+- 插件 0.3.12 建议搭配 **WE API 服务 0.3.1**（开关默认关）；升级后 `http://127.0.0.1:8088/health` 的 `"sceneRender"` 应为 `0`（开启后为 `1`）。服务版本号从 0.3.0 → 0.3.1。
+- `verify-service.mjs` 契约校验适配开关：默认关时断言场景路由 `403`、`/health` 不报告缓存目录；`WE_SCENE_RENDER=1` 时执行原有完整场景渲染 / 烘焙契约。
 
 ### 修复
 

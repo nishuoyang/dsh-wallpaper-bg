@@ -18,6 +18,9 @@
  *
  * 缓存：`~/.dsh-wallpaper-bg/cache/scene-anim/<key>.mp4` + `<key>.json` 旁注。
  * 同一时刻只跑一个烘焙任务，其余排队（CPU 单线程渲染，并发只会互相拖慢）。
+ *
+ * 总开关：与场景帧渲染共用 WE_SCENE_RENDER（默认关）——关闭时本模块不建
+ * 缓存目录、不烘焙，接口由服务端返回 403。
  */
 
 'use strict'
@@ -28,6 +31,12 @@ const path = require('path')
 const crypto = require('crypto')
 const { Worker } = require('worker_threads')
 const { pathToFileURL } = require('url')
+
+/** 场景渲染总开关（与 scene-frame.js 同语义）：WE_SCENE_RENDER=1/true/on/yes 才启用 */
+function sceneRenderEnabled() {
+  const v = String(process.env.WE_SCENE_RENDER ?? '').trim().toLowerCase()
+  return v === '1' || v === 'true' || v === 'on' || v === 'yes'
+}
 
 // 与 scene-frame.js 同一套管线版本号语义：渲染逻辑变化 → 旧缓存自动失效
 const ANIM_PIPELINE_VERSION = 'wa1'
@@ -41,8 +50,9 @@ const STATIC_THRESHOLD = 1.2      // 帧签名平均差异低于该值 → 判�
 const LOOP_THRESHOLD = 6.0        // 循环终点候选的签名差异上限
 const RENDER_TIMEOUT_MS = 3600000 // 单张烘焙最长 1 小时（重效果场景 1080p 可能 20 分钟+）
 
-/** 烘焙缓存目录（可用 DSH_WB_CACHE_DIR 覆盖） */
+/** 烘焙缓存目录（可用 DSH_WB_CACHE_DIR 覆盖）；渲染关闭时返回 null 且不创建目录 */
 function animCacheDir() {
+  if (!sceneRenderEnabled()) return null
   const dir = process.env.DSH_WB_CACHE_DIR
     ? path.join(process.env.DSH_WB_CACHE_DIR, 'scene-anim')
     : path.join(os.homedir(), '.dsh-wallpaper-bg', 'cache', 'scene-anim')
@@ -322,6 +332,9 @@ function pump() {
 
 /** 查询状态：'idle' | queued | running | done | static | error */
 function bakeStatus(src, rawOpts) {
+  if (!sceneRenderEnabled()) {
+    return { key: '', state: 'error', error: '场景渲染未启用（WE_SCENE_RENDER=1 开启）', percent: 0 }
+  }
   const opts = normalizeOpts(rawOpts)
   const key = animKey(src, opts)
   const view = jobView(key)
@@ -360,6 +373,9 @@ function videoByKey(key) {
 
 /** 启动烘焙（带源信息登记，供 pump 使用） */
 function enqueueBake(src, rawOpts) {
+  if (!sceneRenderEnabled()) {
+    return { key: '', state: 'error', error: '场景渲染未启用（WE_SCENE_RENDER=1 开启）', percent: 0, cached: false }
+  }
   const opts = normalizeOpts(rawOpts)
   const key = animKey(src, opts)
   if (!jobEntries.has(key)) jobEntries.set(key, { src, opts })
@@ -368,6 +384,6 @@ function enqueueBake(src, rawOpts) {
 
 module.exports = {
   enqueueBake, bakeStatus, cancelBake, listJobs, getBaked, videoByKey,
-  animCacheDir, normalizeOpts, animKey, ANIM_PIPELINE_VERSION,
+  animCacheDir, sceneRenderEnabled, normalizeOpts, animKey, ANIM_PIPELINE_VERSION,
   DEFAULT_WIDTH, DEFAULT_FPS, DEFAULT_DURATION,
 }

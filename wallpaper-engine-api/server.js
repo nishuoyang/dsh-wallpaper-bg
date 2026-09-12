@@ -12,12 +12,19 @@
  *                               HTML 文档注入 WE 私有接口垫片，支持 ETag / Range）
  *   GET /scene-frame/<id>     → 场景壁纸完整帧 PNG（纯 JS 场景渲染器，worker 线程
  *                               + 磁盘缓存；失败回退主纹理静态帧，再失败 422）
+ *                               **默认关闭**：WE_SCENE_RENDER=1 才启用，关闭时 403
  *
  * 隔离原则：
  *   - 只调用 wallpaper-engine-api 的 listWallpapers() / wallpaper().current()，
  *     绝不触碰 load / stop / openProfile 等写入接口，桌面壁纸不受任何影响；
  *   - 调用 current() 前先用 tasklist 确认 WE 正在运行，未运行直接返回 null，
  *     避免 -control 命令意外拉起 Wallpaper Engine 主程序。
+ *
+ * 场景渲染总开关（WE_SCENE_RENDER，默认关）：
+ *   场景帧渲染与动画烘焙会把渲染结果缓存到用户主目录（`~/.dsh-wallpaper-bg`）。
+ *   本服务默认**不启用**该能力：启动、/health、/scene-frame、/scene-anim 都不会
+ *   创建该目录，场景壁纸由插件端回退到工坊预览图。需要完整场景帧 / 烘焙动画时，
+ *   在 we-api.config 或环境变量里设置 WE_SCENE_RENDER=1 再重启服务。
  *
  * 订阅过滤：列表按 Steam UGC 订阅清单（userdata/<id>/ugc/431960_subscriptions.vdf）
  * 过滤，已退订 / 本地禁用但文件夹仍残留的壁纸不会出现在列表里，与 WE 界面一致；
@@ -31,6 +38,7 @@
  *   WEAPI_PORT        端口，默认 8088（8080 被 Jenkins 占用）
  *   WE_INSTALL_PATH   WE 安装目录（含 wallpaper64.exe / wallpaper32.exe）
  *   WE_WORKSHOP_PATH  创意工坊壁纸库目录（...\steamapps\workshop\content\431960）
+ *   WE_SCENE_RENDER   场景帧渲染 / 动画烘焙开关，默认 0（关）；1 / true / on 开启
  */
 
 'use strict'
@@ -113,6 +121,20 @@ function deriveWorkshopPath(installPath) {
 }
 
 const cfgFile = readConfigFile()
+
+// ---------------------------------------------------------------------------
+// 场景渲染总开关（默认关）
+// ---------------------------------------------------------------------------
+// 场景帧渲染 / 动画烘焙会把结果缓存到 ~/.dsh-wallpaper-bg，对只装壁纸插件的
+// 用户默认不应产生该目录 → 默认关闭：WE_SCENE_RENDER=1（环境变量或 we-api.config）
+// 才启用。下面把配置文件里的开关合并进环境变量，让 scene-frame.js / scene-anim.js
+// 的 sceneRenderEnabled() 与这里读到同一个值。
+const SCENE_RENDER_CFG = String(cfgFile.WE_SCENE_RENDER ?? '').trim().toLowerCase()
+const SCENE_RENDER_ENV = String(process.env.WE_SCENE_RENDER ?? '').trim().toLowerCase()
+const SCENE_RENDER_ENABLED = ['1', 'true', 'on', 'yes'].includes(SCENE_RENDER_ENV || SCENE_RENDER_CFG)
+if (SCENE_RENDER_ENABLED && !process.env.WE_SCENE_RENDER) {
+  process.env.WE_SCENE_RENDER = SCENE_RENDER_CFG
+}
 
 let WE_INSTALL_PATH =
   process.env.WE_INSTALL_PATH ||
@@ -744,6 +766,14 @@ function resolveSceneSource(id) {
  * 客户端断开（切壁纸）时通过 AbortSignal 终止 worker，不浪费 CPU。
  */
 async function serveSceneFrame(req, res, url, pathname) {
+  // 场景渲染总开关（默认关）：关闭时不解析源、不建缓存目录，直接 403，
+  // 插件端收到后回退工坊预览图（preview.gif / preview.jpg）。
+  if (!SCENE_RENDER_ENABLED) {
+    return sendJson(res, 403, {
+      ok: false,
+      error: '场景渲染未启用（默认关）：在 we-api.config 或环境变量设置 WE_SCENE_RENDER=1 后重启服务',
+    })
+  }
   const id = pathname.slice('/scene-frame/'.length).replace(/\/+$/, '')
   const src = resolveSceneSource(id)
   if (!src) return sendJson(res, 404, { ok: false, error: '场景壁纸不存在: ' + id })
@@ -814,6 +844,13 @@ async function serveSceneFrame(req, res, url, pathname) {
  * **异步**的：`bake=1` 入队并立即返回状态，客户端轮询看进度，完成后取 video.mp4。
  */
 async function serveSceneAnim(req, res, url, pathname) {
+  // 场景渲染总开关（默认关）：关闭时烘焙 / 状态 / 视频一律 403，且不建缓存目录
+  if (!SCENE_RENDER_ENABLED) {
+    return sendJson(res, 403, {
+      ok: false,
+      error: '场景渲染未启用（默认关）：在 we-api.config 或环境变量设置 WE_SCENE_RENDER=1 后重启服务',
+    })
+  }
   const rest = pathname.slice('/scene-anim/'.length).replace(/\/+$/, '')
   const m = /^(\d{1,20})(?:\/(video\.mp4))?$/.exec(rest)
   if (!m) return sendJson(res, 404, { ok: false, error: '非法路径: ' + rest })
@@ -929,16 +966,19 @@ const server = http.createServer(async (req, res) => {
       return sendJson(res, 200, {
         ok: true,
         service: 'we-api-proxy',
-        version: '0.3.0',
+        version: '0.3.1',
         // 网页壁纸兼容垫片版本：插件可据此判断服务是否需要升级（0 = 旧版，无垫片）
         webShim: 1,
         // 场景壁纸完整帧渲染：1 = 支持 /scene-frame（插件据此决定是否用渲染帧替代 preview.gif）
-        sceneRender: 1,
+        // 默认关（0）：场景渲染会把结果缓存到 ~/.dsh-wallpaper-bg，需显式 WE_SCENE_RENDER=1
+        sceneRender: SCENE_RENDER_ENABLED ? 1 : 0,
         // 骨骼动画完整度：2 = MDLA 全帧率解析 + 动画缩放 + 静态帧时刻选择（旧版角色眼睛会闭/错位）
-        puppetAnim: 2,
+        // 未启用场景渲染时为 0（不宣称该能力）
+        puppetAnim: SCENE_RENDER_ENABLED ? 2 : 0,
         // 场景壁纸动画烘焙：1 = 支持 /scene-anim（把场景渲染成可循环 MP4，客户端用 <video> 播）
-        sceneAnim: 1,
-        sceneFrameCache: sceneFrameCacheDir(),
+        sceneAnim: SCENE_RENDER_ENABLED ? 1 : 0,
+        // 场景帧缓存目录：仅在启用场景渲染时给出（关闭时不创建、不报告该目录）
+        sceneFrameCache: SCENE_RENDER_ENABLED ? sceneFrameCacheDir() : null,
         mode: 'readonly',
         weInstallPath: WE_INSTALL_PATH,
         workshopPath: WE_WORKSHOP_PATH,
@@ -958,6 +998,9 @@ const server = http.createServer(async (req, res) => {
         wallpapers: items,
         count: items.length,
         hiddenUnsubscribed: hidden,
+        // 场景渲染能力位：插件据此决定场景壁纸是走 /scene-frame 还是直接用工坊预览图。
+        // 默认关（0）——场景渲染会把完整场景帧缓存到 ~/.dsh-wallpaper-bg。
+        sceneRender: SCENE_RENDER_ENABLED ? 1 : 0,
       })
     }
     if (
@@ -970,6 +1013,13 @@ const server = http.createServer(async (req, res) => {
       return serveSceneFrame(req, res, url, p)
     }
     if (p === '/scene-anim/status') {
+      // 关闭时不调用 animCacheDir()（它会创建 ~/.dsh-wallpaper-bg/cache/scene-anim）
+      if (!SCENE_RENDER_ENABLED) {
+        return sendJson(res, 403, {
+          ok: false,
+          error: '场景渲染未启用（默认关）：在 we-api.config 或环境变量设置 WE_SCENE_RENDER=1 后重启服务',
+        })
+      }
       return sendJson(res, 200, { ok: true, jobs: sceneAnim.listJobs(), cacheDir: sceneAnim.animCacheDir() })
     }
     if (p.startsWith('/scene-anim/')) {
@@ -1001,9 +1051,16 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, HOST, () => {
   console.log('[WE-API] 只读代理服务已启动: http://' + HOST + ':' + PORT)
-  console.log('[WE-API] 端点: /health  /api/wallpapers  /api/current  /files/<id>/...  /scene-frame/<id>  /scene-anim/<id>')
-  console.log('[WE-API] 场景帧缓存: ' + sceneFrameCacheDir())
-  console.log('[WE-API] 动画烘焙缓存: ' + sceneAnim.animCacheDir())
+  if (SCENE_RENDER_ENABLED) {
+    console.log('[WE-API] 端点: /health  /api/wallpapers  /api/current  /files/<id>/...  /scene-frame/<id>  /scene-anim/<id>')
+    // 仅在启用时才触碰缓存目录（调用 cacheDir() 会创建 ~/.dsh-wallpaper-bg）
+    console.log('[WE-API] 场景帧缓存: ' + sceneFrameCacheDir())
+    console.log('[WE-API] 动画烘焙缓存: ' + sceneAnim.animCacheDir())
+  } else {
+    console.log('[WE-API] 端点: /health  /api/wallpapers  /api/current  /files/<id>/...')
+    console.log('[WE-API] 场景渲染（/scene-frame、/scene-anim）: 未启用（默认关）——不会创建 ~/.dsh-wallpaper-bg')
+    console.log('[WE-API] 需要完整场景帧 / 烘焙动画时: 在 we-api.config 加一行 WE_SCENE_RENDER=1 后重启服务')
+  }
   console.log('[WE-API] 壁纸库: ' + WE_WORKSHOP_PATH)
   console.log('[WE-API] 本服务只读，不调用任何设置/播放壁纸的接口，桌面壁纸不受影响。')
 })

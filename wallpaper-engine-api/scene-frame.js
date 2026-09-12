@@ -17,6 +17,8 @@
  * 缓存：`~/.dsh-wallpaper-bg/cache/scene-frames/`（可用 DSH_WB_CACHE_DIR 覆盖），
  * key 含场景文件 mtime + 渲染尺寸 + 时刻 + 管线版本，工坊更新后自动失效重建。
  *
+ * 总开关：场景渲染**默认关闭**（WE_SCENE_RENDER=1/true/on/yes 才启用）——
+ * 关闭时本模块不建任何缓存目录、不渲染，接口由服务端返回 403。
  * 只读：仅读取用户本机壁纸目录，不复制、不上传、不修改任何 WE 配置。
  */
 
@@ -28,6 +30,17 @@ const path = require('path')
 const crypto = require('crypto')
 const { pathToFileURL } = require('url')
 const { Worker } = require('worker_threads')
+
+/**
+ * 场景渲染总开关：WE_SCENE_RENDER=1/true/on/yes 才启用。
+ * 默认关——避免只装壁纸插件的用户被自动创建 ~/.dsh-wallpaper-bg 缓存目录。
+ * 服务端在启动时会先把 we-api.config 里的 WE_SCENE_RENDER 合并进环境变量，
+ * 因此这里只看环境变量即可（配置文件入口统一由 server.js 处理）。
+ */
+function sceneRenderEnabled() {
+  const v = String(process.env.WE_SCENE_RENDER ?? '').trim().toLowerCase()
+  return v === '1' || v === 'true' || v === 'on' || v === 'yes'
+}
 
 // 管线版本：渲染逻辑变化时递增，旧缓存自动失效（与上游 sf* 同语义）
 const PIPELINE_VERSION = 'wb3'
@@ -192,6 +205,10 @@ const inflight = new Map()
  *                     error?:string, fallbackFrom?:string }>}
  */
 async function renderSceneFrame(src, opts = {}) {
+  // 总开关：关闭时不建缓存目录、不渲染（服务端路由层还会先返回 403，这里是兜底）
+  if (!sceneRenderEnabled()) {
+    return { ok: false, error: '场景渲染未启用（WE_SCENE_RENDER=1 开启）' }
+  }
   const time = Number.isFinite(opts.time) ? Number(opts.time) : DEFAULT_TIME
   const weAssetsDir = opts.weAssetsDir || null
   const signal = opts.signal || null
@@ -318,4 +335,4 @@ async function renderSceneFrame(src, opts = {}) {
   }
 }
 
-module.exports = { renderSceneFrame, cacheDir, sceneAspect, PIPELINE_VERSION, DEFAULT_WIDTH, DEFAULT_TIME }
+module.exports = { renderSceneFrame, cacheDir, sceneAspect, sceneRenderEnabled, PIPELINE_VERSION, DEFAULT_WIDTH, DEFAULT_TIME }
