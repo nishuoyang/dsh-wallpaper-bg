@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-> v0.5.2 · MIT License
+> v0.5.3 · MIT License
 
 [![npm version](https://img.shields.io/npm/v/dsh-wallpaper-bg?label=npm&color=cb3837)](https://www.npmjs.com/package/dsh-wallpaper-bg)
 [![npm downloads](https://img.shields.io/npm/dm/dsh-wallpaper-bg?label=downloads)](https://www.npmjs.com/package/dsh-wallpaper-bg)
@@ -82,10 +82,32 @@ dsh plugin --profile web add dsh-wallpaper-bg
 
 > 本地开发建议直接链接仓库（两个 profile 都支持 link 形式）：
 > `dsh plugin --profile web add link:<仓库绝对路径>`（桌面端则用 `--profile desktop`）—— 之后改 `lib/client.js` / `lib/host.js` 只需普通刷新页面即可生效，无需重启服务。
+>
+> Windows 下仓库路径**不能带空格**：`dsh plugin` 是经 shell 转发给 pnpm 的，带空格的 spec 会被拆成两个假依赖（`link:E:/My` + `link:Dir/plugin`），该 profile 随后直接加载失败。请把仓库放到无空格路径，或直接运行 `install-local.ps1` / `dsh-wallpaper-bg install`——它把仓库链接到 `%DSH_HOME%\node_modules`（全程无空格）并写入 profile 补丁层。
+
+### 升级（为什么只跑 `add` 不会升级）
+
+`dsh plugin … add` 转发给 `pnpm add`，而 pnpm 会保留 profile 清单里已有的版本范围：对已安装的插件重复执行安装命令不会产生任何变化，停在 `^0.4.1` 的 profile 永远不会自己走到 0.5.x。要升级请显式指定版本：
+
+```bash
+dsh plugin --profile web add dsh-wallpaper-bg@latest    # 升到最新发布版
+dsh plugin --profile web add dsh-wallpaper-bg@0.5.3     # 或锁定某个具体版本
+```
+
+> **pnpm 11 只安装「发布满一天」的版本。** pnpm 11 默认开启 24 小时的 `minimumReleaseAge`（供应链保护）：某版本发布后约一天内，`dsh plugin … add dsh-wallpaper-bg` 只会解析到**上一个版本**，并打印 `(0.5.3 is available)`；`@latest` 同样受这个门槛限制。想立刻装上刚发布的版本，可以：写死版本号（`dsh-wallpaper-bg@0.5.3`）、加 `--config.minimumReleaseAge=0`，或在 profile 的 `pnpm-workspace.yaml` 里把本包排除：
+>
+> ```yaml
+> minimumReleaseAgeExclude:
+>   - dsh-wallpaper-bg
+> ```
+>
+> 桌面端的插件页面走的是同一个 pnpm，所以刚发布的版本也要等约一天才会出现在那里。
 
 ### 可选组件：WE 壁纸库服务（Windows）
 
 「WE 壁纸库」来源需要 `wallpaper-engine-api/` 服务，它把 Wallpaper Engine 已安装壁纸列表以只读 HTTP API 暴露在 `127.0.0.1:8088`：
+
+> 该服务只随**仓库**提供，不在 npm 包里（npm tarball 只含插件本体：`lib/`、`bin/`、`cordis.patch.yml` 与文档）。从 npm 安装、又想要「WE 壁纸库」来源的用户，请 clone <https://github.com/nishuoyang/dsh-wallpaper-bg>；不需要它的话，内置壁纸与自定义上传都不受影响。插件面板的「WE 壁纸库」标签在连不上服务时也会给出同样的提示。
 
 1. 进入 `wallpaper-engine-api/` 目录，执行 `npm install`；
 2. 双击 `启动服务.bat`（首次运行会引导写入安装路径；也可用 `启动服务-静默.vbs` 静默启动）；
@@ -132,6 +154,8 @@ dsh plugin --profile web add dsh-wallpaper-bg
 - **桌面端怎么装？** 不用命令行：**设置 → 插件** → 输入包名 `dsh-wallpaper-bg` → 安装 → 按提示重启桌面端。装好后会出现在同一个插件页面里（可停用 / 卸载，也能看插件介绍与来源）。终端等价命令（需先装上桌面端提供的 `dsh` 命令）：`dsh plugin --profile desktop add dsh-wallpaper-bg`。
 - **桌面端为什么 `dsh --profile desktop …` 报错？** 那个 profile 归 Electron 应用独占，终端启动会被拒绝：`profile "desktop" is managed exclusively by the Electron application`。这是设计如此——profile 由应用自己组合并启动。`dsh plugin --profile desktop <pnpm 参数>`（安装 / 列表 / 卸载）仍然可用，因为它只改 profile 的包清单。本包的 `dsh-wallpaper-bg install` 因此也会跳过 `desktop` 并提示走插件页面。
 - **桌面端需要 Node.js 吗？需要 WE 服务吗？** Node.js 不需要——桌面端自带 Node / pnpm 运行时，只有 `dsh web` 命令行方式才要求 Node ≥ 20。可选的「WE 壁纸库」来源不受影响：仍然需要 Windows + 本机 Wallpaper Engine + 8088 端口的 `wallpaper-engine-api` 服务，和 `dsh web` 一致。
+- **装完发现版本比 npm 上的旧？** 是 pnpm 11 默认的 24 小时 `minimumReleaseAge` 门槛，见上文[升级](#升级为什么只跑-add-不会升级)。想立刻装上就写死版本：`dsh plugin --profile web add dsh-wallpaper-bg@0.5.3`。
+- **能装进 `headless` / `tui` / 自建 profile 吗？** 可以，而且无害：插件只在宿主的 `webServer` 服务存在时才注册路由，没有 Web 界面的 profile 会照常启动、插件静默不生效（这个修复之前，这类 profile 会直接以 `1 entry did not activate` 启动失败）。不过装在那种 profile 里没有意义——壁纸界面在浏览器页面里——请装进 `web`，或桌面端的 `desktop` profile。
 - **桌面端怎么确认插件加载了？** 打开 `http://127.0.0.1:19387/dsh-wallpaper-bg/health`，返回 `{"ok":true,"plugin":"dsh-wallpaper-bg","version":"…"}` 即宿主半已挂载（0.2 桌面端固定用 19387 端口跑 `desktop` profile）。界面里也能确认：**设置 → 插件** 里列出 `dsh-wallpaper-bg`（已安装 / 已启用），**设置 → 壁纸** 能打开面板。
 - **「同步桌面壁纸」显示的壁纸和我桌面上那张不一样？** 先看状态行里的**显示器**那一项：WE 的 `config.json` 把当前壁纸按显示器存成 `selectedwallpapers.Monitor0 / Monitor1 / …`，键的编号由 WE 自己维护——显示器插拔、切换主屏、笔记本内屏关掉之后，`Monitor0` 常常**不是你正在看的那台**（旧版正是盲取 `Monitor0`，于是页面一直是「以前那张」，很容易被误判成缓存没清）。0.5.1 起服务会按「最近换过壁纸的那台 → 正在被读取 / 播放的那台 → `Monitor0` 兜底」自动判定，并在状态行里写明依据（`auto：最近换过壁纸的那台` 等）；多显示器时还能在**「跟随显示器」下拉**里直接钉死某台。服务需为 **0.5.1+**（`http://127.0.0.1:8088/health` 应含 `"monitorSelect": 1`），改完记得双击 `wallpaper-engine-api/重启服务(管理员).bat` 重启服务；**下拉可用还需要重启 DSH**（透传 `monitor` 的宿主半随 DSH 启动加载，插件会在下拉旁直接提示这一点）。
 - **场景类壁纸在页面上怎么显示？** 一律显示 WE 自带的工坊预览图（`preview.gif` / `preview.jpg`，WE 为每张壁纸生成的预览），**不做本地渲染、不采样桌面画面**：

@@ -4,7 +4,11 @@
 
 > 发版时把下面的 `## [未发布]` 改成 `## [x.y.z] - YYYY-MM-DD`（`scripts/release.ps1` 要求存在对应版本条目）。
 
-## [未发布]
+## [0.5.3] - 2026-10-01
+
+### 新增
+
+- **「WE 壁纸库」连不上服务时直接给出获取方式**：面板的错误提示现在写明该服务只随仓库提供、不在 npm 包里，并给出 `git clone https://github.com/nishuoyang/dsh-wallpaper-bg` → `wallpaper-engine-api` 里 `npm install` → 双击 `启动服务-静默.vbs` 的完整步骤，同时说明不需要 WE 壁纸库时可以忽略（内置壁纸与自定义上传都不依赖它）。`dsh-wallpaper-bg install` / `status` / `help` 与 `install-local.ps1` 的提示同样补上了仓库地址，`package.json` 描述里也标明了这一限制（桌面端「设置 → 插件」列表与 npm 包页面可见）。
 
 ### 变更
 
@@ -12,6 +16,17 @@
 - **新增两个 CI 工作流**（`.github/workflows/`），都不改动现有发布流程：
   - `publish-npm.yml`：用 OIDC **trusted publishing** 发布到 npmjs（无需 token），npm 自动附带 **provenance** 证明——npm 包页面出现 "Built and signed on GitHub Actions" 徽章，点开直达本仓库 / commit。默认只手动触发，避免与 `release.ps1` 的本地 `npm publish` 抢版本号。
   - `publish-github-packages.yml`：GitHub Release 发布后把包镜像到 GitHub Packages（`@nishuoyang/dsh-wallpaper-bg`），让仓库右侧的 **Packages** 区块列出本包。该镜像仅供 GitHub 侧展示——GitHub Packages 的 npm 源即使 public 也要带 token 才能 install，对外安装仍走 npmjs。
+
+### 修复
+
+- **装进没有 Web 服务的 profile 不再让 DSH 启动失败**：宿主半原先用 `inject: ['webServer']` 硬门控，在没有 Web 服务的 profile（`headless`、`tui`、自建 profile，以及终端里 `dsh plugin --profile desktop` 新建出来的 desktop profile）里这条插件行会永远停在 pending，DSH 启动直接报 `plugin tree failed to load: dsh: 1 entry did not activate / dsh-wallpaper-bg: waiting for service: webServer`——用户装完插件整个 profile 都起不来。现在改为 `ctx.inject(['webServer'], cb)` 按需注入：服务缺失时插件照常激活、什么都不注册；服务出现时自动注册路由、消失时自动注销。`web` / 桌面端行为与之前完全一致（`/dsh-wallpaper-bg/health`、`/we`、`/asset` 全部照常）。
+
+### 文档
+
+- **新增「升级」小节**（README / README.zh.md）：说明 `dsh plugin … add` 对已存在的依赖不会改范围（停在 `^0.4.1` 的 profile 不会自己升到 0.5.x），升级要写 `dsh-wallpaper-bg@latest` 或具体版本；并说明 **pnpm 11 默认 24 小时 `minimumReleaseAge`** 的影响——版本发布后约一天内 `add dsh-wallpaper-bg` 只会装到上一个版本（`@latest` 同样受限），要立刻安装可写死版本号、加 `--config.minimumReleaseAge=0`，或在 profile 的 `pnpm-workspace.yaml` 里配 `minimumReleaseAgeExclude`。
+- **补 Windows `link:` 安装的路径限制**：`dsh plugin` 经 shell 转发给 pnpm，仓库路径带空格时 spec 会被拆成两个假依赖（`link:E:/My` + `link:Dir/plugin`）导致 profile 加载失败；改用无空格路径或 `install-local.ps1` / `dsh-wallpaper-bg install`（后者链接到 `%DSH_HOME%\node_modules`，全程无空格）。
+- **FAQ 增补两条**：安装到旧版本的处理方式；装进 `headless` / `tui` / 自建 profile 的行为（无害但无意义）。
+- **WE 服务安装说明补一句**：`wallpaper-engine-api/` 只随仓库提供，npm 包（tarball）里只有插件本体，从 npm 安装的用户要用「WE 壁纸库」需 clone 仓库（README 里已给出仓库地址）。
 
 ## [0.5.2] - 2026-10-01
 

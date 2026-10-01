@@ -24,6 +24,8 @@ const ok = (name, cond, extra = '') => {
 }
 
 // ---- 最小 ctx：抓住 webServer.register 的路由，effect 立即执行 ----
+// 宿主半按需注入 webServer（ctx.inject：服务缺失时插件照样激活，只是不注册路由），
+// 所以这里也要给一个 inject：服务已在位，直接同步回调。
 let handler = null
 const ctx = {
   webServer: {
@@ -33,6 +35,7 @@ const ctx = {
     },
   },
   effect(fn) { return fn() },
+  inject(deps, cb) { return cb(this) },
 }
 plugin.apply(ctx, { weBase: WE_BASE })
 if (!handler) {
