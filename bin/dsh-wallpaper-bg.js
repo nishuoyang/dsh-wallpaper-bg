@@ -535,6 +535,30 @@ function parseArgs(argv) {
   return args
 }
 
+/**
+ * 该 profile 是否已经把本插件列进 `dsh.profile.bundles`——只有列进去才会被
+ * 当成 profile 组合层加载。`dsh plugin add` 由 DSH 自己回填这一项；极少数情况下
+ * （刚发布后注册表还在传播时）会漏写：依赖装上了、bundles 里却没有它，表现是
+ * 「装完了但 设置 → 壁纸 里没有面板」。重跑一次 add 即可补上。
+ */
+function bundleListed(dir) {
+  const manifest = profileManifest(dir)
+  const bundles = manifest?.dsh?.profile?.bundles
+  return Array.isArray(bundles) && bundles.includes(PACKAGE_NAME)
+}
+
+/** bundle / 依赖两种「按插件包安装」状态的措辞（status 用） */
+function packageState(dir) {
+  if (bundleListed(dir)) return 'installed（bundle 层，随 DSH 启动加载）'
+  if (installedAsPackage(dir)) {
+    return (
+      'installed（依赖已装，但 dsh.profile.bundles 里没有 ' + PACKAGE_NAME +
+      ' → 不会被加载；重跑一次 dsh plugin --profile ' + basename(dir) + ' add ' + PACKAGE_NAME + ' 即可补上）'
+    )
+  }
+  return null
+}
+
 function printStatus() {
   const lines = []
   lines.push('DSH_HOME: ' + dshHome)
@@ -549,10 +573,11 @@ function printStatus() {
       const dir = dirname(p)
       const name = basename(dir)
       const ps = patchState(p)
+      const pkgState = packageState(dir)
       let state
       if (ps.row) state = 'installed（用户补丁层）'
-      else if (name === DESKTOP_PROFILE) state = '桌面端独占管理（请用应用内「设置 → 插件」）'
-      else if (installedAsPackage(dir)) state = 'installed（bundle / 插件管理页面）'
+      else if (name === DESKTOP_PROFILE && !pkgState) state = '桌面端独占管理（请用应用内「设置 → 插件」）'
+      else if (pkgState) state = pkgState
       else state = 'absent'
       lines.push('patch layer ' + p + ': ' + state)
     }
@@ -561,9 +586,10 @@ function printStatus() {
   }
   const desktopDir = join(dshHome, 'profiles', DESKTOP_PROFILE)
   if (existsSync(desktopDir)) {
+    const desktopState = packageState(desktopDir)
     lines.push(
       'desktop profile: ' +
-        (installedAsPackage(desktopDir) ? 'installed（bundle 层，应用启动即生效）' : '未安装本插件') +
+        (desktopState || '未安装本插件') +
         ' — 由 Electron 桌面端独占管理',
     )
   }

@@ -4,6 +4,13 @@
 
 > 发版时把下面的 `## [未发布]` 改成 `## [x.y.z] - YYYY-MM-DD`（`scripts/release.ps1` 要求存在对应版本条目）。
 
+## [0.5.4] - 2026-10-01
+
+### 修复
+
+- **`dsh-wallpaper-bg status` 现在能认出「装了但没进 bundles」的状态**：`dsh plugin … add` 由 DSH 自己把插件名回填进 `dsh.profile.bundles`，只有进了这个列表才会被当成 profile 组合层加载；版本刚发布、注册表还在传播时偶尔会漏写（依赖装上了、bundles 里却没有），表现是「装完了但 设置 → 壁纸 里没有面板」。status 以前只按「依赖里有没有」判断，会误报成已安装；现在区分为 `installed（bundle 层，随 DSH 启动加载）` 与 `installed（依赖已装，但 dsh.profile.bundles 里没有 … → 不会被加载；重跑一次 dsh plugin --profile <name> add dsh-wallpaper-bg 即可补上）`，desktop profile 一行同理。
+- **README / README.zh.md FAQ 增补**：「装完没有面板」的排查步骤（查 `dsh.profile.bundles`、用 status 判断、重跑一次 add），以及 `<DSH 地址>/dsh-wallpaper-bg/health` 这另一半检查。
+
 ## [0.5.3] - 2026-10-01
 
 ### 新增
