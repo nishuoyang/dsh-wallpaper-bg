@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-> v0.5.5 · MIT License
+> v0.5.6 · MIT License
 
 [![npm version](https://img.shields.io/npm/v/dsh-wallpaper-bg?label=npm&color=cb3837)](https://www.npmjs.com/package/dsh-wallpaper-bg)
 [![npm downloads](https://img.shields.io/npm/dm/dsh-wallpaper-bg?label=downloads)](https://www.npmjs.com/package/dsh-wallpaper-bg)
@@ -91,10 +91,10 @@ dsh plugin --profile web add dsh-wallpaper-bg
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg@latest    # 升到最新发布版
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.5     # 或锁定某个具体版本
+dsh plugin --profile web add dsh-wallpaper-bg@0.5.6     # 或锁定某个具体版本
 ```
 
-> **pnpm 11 只安装「发布满一天」的版本。** pnpm 11 默认开启 24 小时的 `minimumReleaseAge`（供应链保护）：某版本发布后约一天内，`dsh plugin … add dsh-wallpaper-bg` 只会解析到**上一个版本**，并打印 `(0.5.5 is available)`；`@latest` 同样受这个门槛限制。想立刻装上刚发布的版本，可以：写死版本号（`dsh-wallpaper-bg@0.5.5`）、加 `--config.minimumReleaseAge=0`，或在 profile 的 `pnpm-workspace.yaml` 里把本包排除：
+> **pnpm 11 只安装「发布满一天」的版本。** pnpm 11 默认开启 24 小时的 `minimumReleaseAge`（供应链保护）：某版本发布后约一天内，`dsh plugin … add dsh-wallpaper-bg` 只会解析到**上一个版本**，并打印 `(0.5.6 is available)`；`@latest` 同样受这个门槛限制。想立刻装上刚发布的版本，可以：写死版本号（`dsh-wallpaper-bg@0.5.6`）、加 `--config.minimumReleaseAge=0`，或在 profile 的 `pnpm-workspace.yaml` 里把本包排除：
 >
 > ```yaml
 > minimumReleaseAgeExclude:
@@ -128,7 +128,7 @@ dsh plugin --profile web add dsh-wallpaper-bg@0.5.5     # 或锁定某个具体�
 
    若失败（例如 `EALLOWREMOTE`，或网络到不了锁文件里指向的镜像），第 5 步的启动脚本会走同样的兜底步骤，详见下方常见问题。
 5. **双击 `启动服务.bat`**——首次运行的入口。它先查端口与 Node.js、缺依赖就补装；`we-api.config` 不存在时依次询问 WE 安装路径（探测到就直接回车确认；也可以粘贴 `wallpaper64.exe`、它所在的目录，或你的 Steam 目录）与订阅壁纸库目录（直接回车用推导出的默认值 `...\steamapps\workshop\content\431960`）。写入 `we-api.config` 后脚本会在当前窗口里启动服务，`Ctrl+C` 或关闭窗口即停止。之后随时可以用 `启动服务.bat /setup` 重跑向导。
-6. 可选：双击 `设置开机自启.bat`，把静默启动脚本注册到注册表（`HKCU\...\Run`），登录 Windows 时后台自动启动；取消请双击 `取消开机自启.bat`（脚本直接引用本目录的 `启动服务-静默.vbs`，移动过目录后请重新设置一次）。
+6. **推荐：双击 `设置开机自启.bat`**，把静默启动脚本注册到注册表（`HKCU\...\Run`），登录 Windows 时后台自动启动。不设的话，服务只活在「启动它的那个窗口」存续期间——重启电脑、或随手关掉 `启动服务.bat` 的窗口，它就不在了，WE 页签会提示连不上服务（列表还会标注可能已过期），直到你再启动一次。取消请双击 `取消开机自启.bat`（两个脚本都直接引用本目录的 `启动服务-静默.vbs`，移动过目录后请重新设置一次）。
 
 **首次运行 vs. 后台启动。** `we-api.config` 生成之后，`启动服务-静默.vbs` 才会无窗口地把同一个服务跑起来（开机自启项跑的就是它），输出追加到 `we-api.log`。**首次运行请一律走 `启动服务.bat`**：静默启动没有向导，缺少 `node_modules` 或 `we-api.config` 时会**完全静默地**失败——连窗口都不会有，唯一痕迹是 `we-api.log` 末尾的一段堆栈。双击了却「什么都没发生」，就是这种情况：改用 `启动服务.bat`。
 
@@ -187,7 +187,7 @@ WE_WORKSHOP_PATH=D:\Steam\steamapps\workshop\content\431960
 - **桌面端怎么装？** 不用命令行：**设置 → 插件** → 输入包名 `dsh-wallpaper-bg` → 安装 → 按提示重启桌面端。装好后会出现在同一个插件页面里（可停用 / 卸载，也能看插件介绍与来源）。终端等价命令（需先装上桌面端提供的 `dsh` 命令）：`dsh plugin --profile desktop add dsh-wallpaper-bg`。
 - **桌面端为什么 `dsh --profile desktop …` 报错？** 那个 profile 归 Electron 应用独占，终端启动会被拒绝：`profile "desktop" is managed exclusively by the Electron application`。这是设计如此——profile 由应用自己组合并启动。`dsh plugin --profile desktop <pnpm 参数>`（安装 / 列表 / 卸载）仍然可用，因为它只改 profile 的包清单。本包的 `dsh-wallpaper-bg install` 因此也会跳过 `desktop` 并提示走插件页面。
 - **桌面端需要 Node.js 吗？需要 WE 服务吗？** 插件本体不需要——桌面端自带 Node / pnpm 运行时，只有 `dsh web` 命令行方式才要求 Node ≥ 20。可选的「WE 壁纸库」是例外：它的服务是跑在 DSH 之外的独立 Node 进程，所以桌面端也要求 **PATH 里有 Node.js**；此外仍然需要 Windows + 本机 Wallpaper Engine + 8088 端口的 `wallpaper-engine-api` 服务，和 `dsh web` 一致，见[可选组件：WE 壁纸库服务](#可选组件we-壁纸库服务windows)。
-- **装完发现版本比 npm 上的旧？** 是 pnpm 11 默认的 24 小时 `minimumReleaseAge` 门槛，见上文[升级](#升级为什么只跑-add-不会升级)。想立刻装上就写死版本：`dsh plugin --profile web add dsh-wallpaper-bg@0.5.5`。
+- **装完发现版本比 npm 上的旧？** 是 pnpm 11 默认的 24 小时 `minimumReleaseAge` 门槛，见上文[升级](#升级为什么只跑-add-不会升级)。想立刻装上就写死版本：`dsh plugin --profile web add dsh-wallpaper-bg@0.5.6`。
 - **装完了，但 设置 → 壁纸 里没有面板？** 先确认这个 profile 真把它当组合层加载：`profiles/<name>/package.json` 的 `dsh.profile.bundles` 里要有 `dsh-wallpaper-bg`——`dsh-wallpaper-bg status` 也会报这一点（在 bundles 里显示 `installed（bundle 层…）`，只装了依赖、没进 bundles 时会明确提示重跑一次 `add`）。这一项由 DSH 安装时自己回填；版本刚发布不久、注册表还在传播时偶尔会漏写，重跑 `dsh plugin --profile web add dsh-wallpaper-bg@<版本>` 即可补上。另一半检查是 `<DSH 地址>/dsh-wallpaper-bg/health` 返回 JSON。
 - **能装进 `headless` / `tui` / 自建 profile 吗？** 可以，而且无害：插件只在宿主的 `webServer` 服务存在时才注册路由，没有 Web 界面的 profile 会照常启动、插件静默不生效（这个修复之前，这类 profile 会直接以 `1 entry did not activate` 启动失败）。不过装在那种 profile 里没有意义——壁纸界面在浏览器页面里——请装进 `web`，或桌面端的 `desktop` profile。
 - **桌面端怎么确认插件加载了？** 打开 `http://127.0.0.1:19387/dsh-wallpaper-bg/health`，返回 `{"ok":true,"plugin":"dsh-wallpaper-bg","version":"…"}` 即宿主半已挂载（0.2 桌面端固定用 19387 端口跑 `desktop` profile）。界面里也能确认：**设置 → 插件** 里列出 `dsh-wallpaper-bg`（已安装 / 已启用），**设置 → 壁纸** 能打开面板。
