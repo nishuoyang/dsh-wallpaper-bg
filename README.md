@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-> v0.5.4 · MIT License
+> v0.5.5 · MIT License
 
 [![npm version](https://img.shields.io/npm/v/dsh-wallpaper-bg?label=npm&color=cb3837)](https://www.npmjs.com/package/dsh-wallpaper-bg)
 [![npm downloads](https://img.shields.io/npm/dm/dsh-wallpaper-bg?label=downloads)](https://www.npmjs.com/package/dsh-wallpaper-bg)
@@ -52,9 +52,9 @@ A static two-half plugin that puts an **independent animated wallpaper layer** u
 
 ### Prerequisites
 
-- **DeepSeek Harness desktop app (0.2 preview or later)** — nothing else to install: the app bundles its own Node.js / pnpm runtime, so no system Node is needed;
+- **DeepSeek Harness desktop app (0.2 preview or later)** — nothing else to install for the plugin itself: the app bundles its own Node.js / pnpm runtime, so no system Node is needed;
 - **or a CLI install** (`dsh web`) with Node.js ≥ 20 (`node -v`) and a working DeepSeek Harness;
-- only the WE library source needs Windows + a local Wallpaper Engine install (optional, see below).
+- the optional WE library source adds its own requirements: Windows, a local Wallpaper Engine install and **Node.js on PATH** — the service is a standalone Node process, so the desktop app's bundled runtime does not cover it (see [Optional: WE library service](#optional-we-library-service-windows)).
 
 ### Install in the desktop app (no command line)
 
@@ -91,10 +91,10 @@ dsh plugin --profile web add dsh-wallpaper-bg
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg@latest    # move to the newest release
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.4     # or pin an exact version
+dsh plugin --profile web add dsh-wallpaper-bg@0.5.5     # or pin an exact version
 ```
 
-> **pnpm 11 installs a release only after it is a day old.** pnpm 11 enables a 24 h `minimumReleaseAge` by default as supply-chain protection, so for roughly a day after a publish `dsh plugin … add dsh-wallpaper-bg` resolves to the *previous* version and prints `(0.5.4 is available)`; `@latest` is gated the same way. To take a fresh release immediately, name the exact version (`dsh-wallpaper-bg@0.5.4`), pass `--config.minimumReleaseAge=0`, or exclude the package in the profile's `pnpm-workspace.yaml`:
+> **pnpm 11 installs a release only after it is a day old.** pnpm 11 enables a 24 h `minimumReleaseAge` by default as supply-chain protection, so for roughly a day after a publish `dsh plugin … add dsh-wallpaper-bg` resolves to the *previous* version and prints `(0.5.5 is available)`; `@latest` is gated the same way. To take a fresh release immediately, name the exact version (`dsh-wallpaper-bg@0.5.5`), pass `--config.minimumReleaseAge=0`, or exclude the package in the profile's `pnpm-workspace.yaml`:
 >
 > ```yaml
 > minimumReleaseAgeExclude:
@@ -107,18 +107,51 @@ dsh plugin --profile web add dsh-wallpaper-bg@0.5.4     # or pin an exact versio
 
 The WE library source needs the `wallpaper-engine-api/` service, which exposes the installed Wallpaper Engine list as a read-only HTTP API on `127.0.0.1:8088`:
 
-> The service ships with the **repository**, not with the npm package (the tarball carries only the plugin: `lib/`, `bin/`, `cordis.patch.yml`, docs). Installed from npm and want the WE library source? Clone <https://github.com/nishuoyang/dsh-wallpaper-bg>; everything else (built-in wallpapers, custom uploads) works without it. The plugin's WE tab says the same thing whenever it cannot reach the service.
+> The service ships with the **repository**, not with the npm package (the tarball carries only the plugin — `wallpaper-engine-api/` is not in it). Installed from npm and want the WE library source? Clone it with `git clone https://github.com/nishuoyang/dsh-wallpaper-bg`; everything else (built-in wallpapers, custom uploads) works without it. The plugin's WE tab says the same thing whenever it cannot reach the service.
 
-1. `cd wallpaper-engine-api && npm install`;
-2. Double-click `启动服务.bat` (the first run asks for the WE install path; `启动服务-静默.vbs` starts it silently);
-3. Optional: double-click `设置开机自启.bat` to register the silent starter in the registry (`HKCU\...\Run`) so it starts at login; `取消开机自启.bat` removes it (the scripts reference `启动服务-静默.vbs` in this directory — re-run them after moving the folder);
-4. For upgrades / restarts always double-click `重启服务(管理员).bat`: it requests admin rights, stops the old process, restarts silently and waits for the port (full log: `restart-debug.log`).
+Set it up in this order — the service is a separate Node process, so **DSH's bundled Node.js runtime does not cover it**:
+
+1. **Windows + a local Wallpaper Engine install.** The service only reads WE's own files, so WE has to be installed already; without a usable install it exits with code 1. It looks at the registry's Steam path and the usual Steam folders, so a WE install in a **secondary Steam library** (e.g. `D:\SteamLibrary\steamapps\common\wallpaper_engine`) is **not** auto-detected — step 5 lets you paste it.
+2. **Node.js on PATH** (`node -v`) — a normal system install, separate from the desktop app's bundled runtime. Without it `启动服务.bat` stops with `[ERROR] Node.js not found in PATH.`
+3. **Clone the repository** (the service is not in the npm package):
+
+   ```bash
+   git clone https://github.com/nishuoyang/dsh-wallpaper-bg
+   ```
+
+4. **Install the service's dependencies**, in `wallpaper-engine-api/`:
+
+   ```bash
+   cd wallpaper-engine-api
+   npm install
+   ```
+
+   If it fails (e.g. `EALLOWREMOTE`, or a registry your network cannot reach), step 5's launcher applies the same fallbacks — see the FAQ entry below.
+5. **Double-click `启动服务.bat`** — the first-run entry point. It checks the port and Node.js, installs missing dependencies, and, while `we-api.config` does not exist, asks for the Wallpaper Engine install path (offering the auto-detected one for confirmation; you can also paste `wallpaper64.exe`, its folder, or your Steam folder) and then for the subscribed-wallpaper library folder (Enter accepts the derived default `...\steamapps\workshop\content\431960`). It writes `we-api.config` and leaves the window running the service; `Ctrl+C` or closing the window stops it. Redo the setup at any time with `启动服务.bat /setup`.
+6. Optional: double-click `设置开机自启.bat` to register the silent starter in the registry (`HKCU\...\Run`) so it starts at login; `取消开机自启.bat` removes it (the scripts reference `启动服务-静默.vbs` in this directory — re-run them after moving the folder).
+
+**First run vs. background start.** Once `we-api.config` exists, `启动服务-静默.vbs` runs the same service with no window (the autostart entry runs that same script) and appends its output to `we-api.log`. Always do the first run through `启动服务.bat`: the silent launcher has no wizard and fails **completely silently** — no window at all — when `node_modules` or `we-api.config` is missing, leaving only a stack trace at the end of `we-api.log`. A start that seems to do nothing is exactly that: run `启动服务.bat` instead.
+
+**Logs** (both in `wallpaper-engine-api/`, both gitignored): `we-api.log` holds the service output written by the silent / autostart path, and `restart-debug.log` records what `重启服务(管理员).bat` did (stop attempts, elevation, port wait). They are the first place to look when the service is not answering.
+
+> **Restarting is not upgrading.** `重启服务(管理员).bat` only stops whatever listens on 8088 and relaunches `node server.js` through the silent starter (asking for admin rights when the kill needs them, then waiting for the port). It does **no** `git pull` and **no** `npm install`, so it can never bring new code in — upgrading means `git pull` in the repository, `npm install` in `wallpaper-engine-api/`, then a restart.
+
+**Non-interactive setup (no wizard).** `we-api.config` is a plain `KEY=value` file generated next to `server.js`; the wizard writes exactly two keys, so writing it yourself skips every prompt:
+
+```ini
+WE_INSTALL_PATH=D:\Steam\steamapps\common\wallpaper_engine
+WE_WORKSHOP_PATH=D:\Steam\steamapps\workshop\content\431960
+```
+
+`node server.js` can also be run directly from `wallpaper-engine-api/` — the wizard is only a convenience wrapped around it. The same settings are accepted as environment variables, which take priority over `we-api.config`: `WE_INSTALL_PATH`, `WE_WORKSHOP_PATH`, `WE_SUBSCRIPTIONS_FILE` (an explicit `431960_subscriptions.vdf`) and `WEAPI_PORT`.
+
+> `WEAPI_PORT` changes the port of the **service only**: the launchers hardcode 8088 (`启动服务.bat` refuses to start while 8088 is listening, `重启服务(管理员).bat` kills and waits on 8088), so a different port also means editing those two scripts — and updating the base URL in the plugin settings.
 
 The service is **read-only**: it only queries the list / current wallpaper, never touches settings or playback, and never launches WE when the runtime is absent. The list is filtered by the real Steam subscription manifest (`431960_subscriptions.vdf`) — unsubscribed or locally disabled wallpapers disappear even if their folders linger, matching the WE UI.
 
-Service **0.5.1** is a plain read-only list / file service: `/health`, `/api/wallpapers`, `/api/current`, `/files/<id>/...`. The desktop-frame capture of 0.4.x (`GET /capture?w=&q=`, `PrintWindow(Progman, …)` plus `koffi` / `jpeg-js`) was **removed** in 0.5.0, exactly like the 0.3.x local scene renderer (`/scene-frame`, `/scene-anim`, `lib/we-renderer/`) before it — those endpoints all return `404`, and `/health` no longer reports `desktopCapture`, only `"webShim": 1`, `"weRunning"` and (since 0.5.1) `"monitorSelect": 1`. Nothing is rendered locally and nothing is written to disk: no `scene.pkg` parsing, no frames, no MP4s, no screen sampling, no `~/.dsh-wallpaper-bg` folder. Scene wallpapers are shown by the plugin as WE's workshop preview (`preview.gif` / `preview.jpg`), and `/api/current` resolves *which monitor* to follow instead of blindly taking `Monitor0`.
+Service **0.5.1** is a plain read-only list / file service: `/health`, `/api/wallpapers`, `/api/current`, `/files/<id>/...`. The desktop-frame capture of 0.4.x (`GET /capture?w=&q=`, `PrintWindow(Progman, …)` plus `koffi` / `jpeg-js`) was **removed** in 0.5.0, exactly like the 0.3.x local scene renderer (`/scene-frame`, `/scene-anim`, `lib/we-renderer/`) before it — those endpoints all return `404`, and `/health` no longer reports `desktopCapture` — it now answers `"version": "0.5.1"` plus the capability markers `"webShim": 1` and (since 0.5.1) `"monitorSelect": 1`, alongside `weInstallPath` / `workshopPath` / `subscriptionsFile` / `weRunning`. Nothing is rendered locally and nothing is written to disk: no `scene.pkg` parsing, no frames, no MP4s, no screen sampling, no `~/.dsh-wallpaper-bg` folder. Scene wallpapers are shown by the plugin as WE's workshop preview (`preview.gif` / `preview.jpg`), and `/api/current` resolves *which monitor* to follow instead of blindly taking `Monitor0`.
 
-> Verify: `http://127.0.0.1:8088/health` is the WE service — a JSON response means it is up. The plugin's own host half reports its version at `<DSH address>/dsh-wallpaper-bg/health`: `http://127.0.0.1:3080/dsh-wallpaper-bg/health` with `dsh web` (default port 3080), or `http://127.0.0.1:19387/dsh-wallpaper-bg/health` in the desktop app — the 0.2 app boots the `desktop` profile with a fixed `--port 19387`. The same check through the UI: **Settings → Plugins** lists `dsh-wallpaper-bg` and **Settings → Wallpaper** opens the panel. Port 8088 is a historical choice (8080 was once taken by Jenkins); switch ports via the `WEAPI_PORT` env var and update the base URL in the plugin settings.
+> Verify: `http://127.0.0.1:8088/health` is the WE service — a JSON response means it is up. The plugin's own host half reports its version at `<DSH address>/dsh-wallpaper-bg/health`: `http://127.0.0.1:3080/dsh-wallpaper-bg/health` with `dsh web` (default port 3080), or `http://127.0.0.1:19387/dsh-wallpaper-bg/health` in the desktop app — the 0.2 app boots the `desktop` profile with a fixed `--port 19387`. The same check through the UI: **Settings → Plugins** lists `dsh-wallpaper-bg` and **Settings → Wallpaper** opens the panel. Port 8088 is a historical choice (8080 was once taken by Jenkins).
 
 ## Settings panel
 
@@ -154,8 +187,8 @@ Zero build on both ends: `lib/client.js` is a hand-written single-file bundle, n
 
 - **How do I install this in the DSH desktop app?** No command line needed: **Settings → Plugins** (设置 → 插件) → type `dsh-wallpaper-bg` → install → restart the app when it asks. The app keeps it in its own `desktop` profile and the same page lets you disable / uninstall it and see its description and source. The terminal equivalent (with the app's `dsh` command on PATH) is `dsh plugin --profile desktop add dsh-wallpaper-bg`.
 - **Why does `dsh --profile desktop …` fail on the command line?** The desktop app owns that profile: DSH answers `profile "desktop" is managed exclusively by the Electron application`. That is by design — the app composes and boots the profile itself. `dsh plugin --profile desktop <pnpm args>` (install / list / remove) still works, because that path only manages the profile's package manifest. This package's `dsh-wallpaper-bg install` therefore skips `desktop` and points you at the plugin page.
-- **Does the desktop app need Node.js, or the `wallpaper-engine-api` service?** Node.js, no — the desktop app bundles its own Node/pnpm runtime, so only a CLI install (`dsh web`) needs Node ≥ 20. The optional WE library source is unaffected: it still needs Windows + a local Wallpaper Engine install + the `wallpaper-engine-api` service on port 8088, exactly as for `dsh web`.
-- **I installed it and got an older version than the one on npm.** pnpm 11's default 24 h `minimumReleaseAge` — see [Upgrading](#upgrading-and-why-add-alone-does-not-upgrade). Name the version (`dsh plugin --profile web add dsh-wallpaper-bg@0.5.4`) to take it immediately.
+- **Does the desktop app need Node.js, or the `wallpaper-engine-api` service?** Node.js, no — the desktop app bundles its own Node/pnpm runtime, so only a CLI install (`dsh web`) needs Node ≥ 20. The optional WE library source is the exception: its service is a Node process running outside DSH, so it needs **Node.js on PATH** even with the desktop app. It still needs Windows + a local Wallpaper Engine install + the service on port 8088, exactly as for `dsh web` — see [Optional: WE library service](#optional-we-library-service-windows).
+- **I installed it and got an older version than the one on npm.** pnpm 11's default 24 h `minimumReleaseAge` — see [Upgrading](#upgrading-and-why-add-alone-does-not-upgrade). Name the version (`dsh plugin --profile web add dsh-wallpaper-bg@0.5.5`) to take it immediately.
 - **Installed it, but Settings → Wallpaper shows no panel?** Check that the profile really loads it as a layer: `profiles/<name>/package.json` must list `dsh-wallpaper-bg` under `dsh.profile.bundles` — `dsh-wallpaper-bg status` reports this too (it prints `installed（bundle 层…）` when the entry is there, and tells you to re-run `add` when only the dependency is present). DSH writes that list itself during install; while a brand-new release is still propagating through the registry the entry is occasionally missed, and re-running `dsh plugin --profile web add dsh-wallpaper-bg@<version>` fixes it. The other half of the check is `<DSH URL>/dsh-wallpaper-bg/health` answering JSON.
 - **Can I install it into a `headless` / `tui` / custom profile?** Yes, and it is harmless: the plugin registers its routes only while the host's `webServer` service exists, so a profile with no web UI boots normally with the plugin simply inert (before this fix such a profile failed to boot with `1 entry did not activate`). It is still pointless there — the wallpaper UI lives in the browser page — so install into `web`, or the desktop app's `desktop` profile.
 - **How do I verify it loaded on the desktop app?** Open `http://127.0.0.1:19387/dsh-wallpaper-bg/health` — `{"ok":true,"plugin":"dsh-wallpaper-bg","version":"…"}` means the host half is mounted (the 0.2 desktop app serves the `desktop` profile on the fixed port 19387). The rest is visible in the UI: **Settings → Plugins** lists `dsh-wallpaper-bg` as installed/enabled, and **Settings → Wallpaper** opens the panel.
@@ -165,15 +198,16 @@ Zero build on both ends: `lib/client.js` is a hand-written single-file bundle, n
   - *The preview looks tiny and blurry when scaled up*: WE's workshop previews are commonly only **192×192** pixels (the status line reports the measured size, e.g. "measured 192×192 pixels, so it must look soft full-screen") — that is the preview's own resolution, **not a stale cached image and not a failure to apply**.
   - *Want 100% faithful motion?* Record the scene for ~30 s with WE's tray-menu screen recorder (or OBS), export an MP4, and import it through custom uploads — it then plays natively in a `<video>` element, fully smooth and with zero extra overhead.
 - **Is there any local scene rendering / baking, or desktop capture, left?** No. The pure-JS scene renderer (`lib/we-renderer/`, `scene.pkg` parsing, shader effects) and the animation-baking stack (`/scene-anim`, `~/.dsh-wallpaper-bg` frame/MP4 caches) were **removed in 0.4.0** along with the `WE_SCENE_RENDER` switch, and the desktop-frame capture (`/capture`, `koffi` + `jpeg-js`) that 0.4.x used for mirroring was **removed in 0.5.0**. The old endpoints return `404`; nothing writes to `~/.dsh-wallpaper-bg` anymore (an existing folder can be deleted freely).
-- **Do web-type wallpapers render?** Yes — web wallpapers are plain HTML/JS pages, rendered natively in a full-screen iframe (`index.html` plus relative assets, served read-only by the WE API's `/files/<id>/...` route, restricted to subscribed wallpaper directories). Since WE API 0.2.6 the served document also gets a **WE private-API shim** injected: it feeds the default user properties from `project.json` into `applyUserProperties` (without it, wallpapers that set their background inside that callback leave only a character floating on pure black — which reads as a portrait wallpaper), stubs the audio / media interfaces, and reports when the page has actually painted, so the plugin only cross-fades once there is a real picture instead of a black screen. Note the background layer never intercepts the mouse, so the wallpaper's own interactions (click / drag) don't work — visual only; audio visualizers run on silence (the browser has no WE audio capture).
-- **Web wallpaper shows a black screen or takes forever?** First make sure the WE API service is upgraded to 0.2.6 and restarted (`http://127.0.0.1:8088/health` should include `"webShim": 1`) — older services have no shim and also reject `../assets/...` style paths that wallpapers write for a `file://` origin.
+- **Do web-type wallpapers render?** Yes — web wallpapers are plain HTML/JS pages, rendered natively in a full-screen iframe (`index.html` plus relative assets, served read-only by the WE API's `/files/<id>/...` route, restricted to subscribed wallpaper directories). The current service (0.5.1) also injects a **WE private-API shim** into the served document: it feeds the default user properties from `project.json` into `applyUserProperties` (without it, wallpapers that set their background inside that callback leave only a character floating on pure black — which reads as a portrait wallpaper), stubs the audio / media interfaces, and reports when the page has actually painted, so the plugin only cross-fades once there is a real picture instead of a black screen. Note the background layer never intercepts the mouse, so the wallpaper's own interactions (click / drag) don't work — visual only; audio visualizers run on silence (the browser has no WE audio capture).
+- **Web wallpaper shows a black screen or takes forever?** First make sure the WE API service is current (0.5.1) and restarted (`http://127.0.0.1:8088/health` should include `"webShim": 1`) — an outdated service has no shim and also rejects `../assets/...` style paths that wallpapers write for a `file://` origin.
 - **Web wallpaper assets re-download on every switch?** Fixed in 0.3.8: the service's `/files` route used to read whole files synchronously and answer `no-store`. It now streams with `ETag` / `Last-Modified` conditional requests (HTML `no-cache`, static assets cached 300 s) and supports `Range`.
-- **Do web-type wallpapers render?** Yes — web wallpapers are plain HTML/JS pages, rendered natively in a full-screen iframe (`index.html` plus relative assets, served read-only by the WE API's `/files/<id>/...` route, restricted to subscribed wallpaper directories). Note the background layer never intercepts the mouse, so the wallpaper's own interactions (click / drag) don't work — visual only; audio visualizers relying on WE's private JS API may stay silent.
 - **Videos have black bars?** Pull 安全放大 (safe zoom) to 2–3% to crop the video's own letterboxing (the cover-crop render already guarantees no self-made bars).
 - **My uploaded video shows a black screen / black tile?** Videos whose MIME type the browser leaves empty (common for `.mkv` / `.mov`) are now detected by extension and rendered as video; every video upload also gets an auto-generated first-frame thumbnail. If a specific file is still black, its codec is likely unsupported by the browser.
 - **Code changes don't take effect?** Split it by half: for `lib/client.js` (browser half) a plain page refresh (F5) is enough — client bundles are read fresh from disk per request (`cache-control: no-cache`). For `lib/host.js` (host half) or anything under `bin/` you **must restart DSH** — the host half is a Node-side ESM module loaded once with the process and never re-imported in place (restart the `dsh web` process, or quit and reopen the desktop app). Restarting is also needed when the plugin set changes (adding / removing plugin rows or editing `dsh.client` declarations). To see which host half is running: open `<DSH URL>/dsh-wallpaper-bg/health` and read `version` (the desktop app is always on port 19387).
 - **WE library errors?** Confirm the `wallpaper-engine-api` service is running on port 8088 (`http://127.0.0.1:8088/health` in a browser) and the base URL in plugin settings matches.
-- **Wallpapers removed in WE still show up?** The service filters by the Steam subscription list, so unsubscribed wallpapers disappear; if the service is outdated (`/health` lacks the `subscriptionsFile` field), double-click `重启服务(管理员).bat` to upgrade, then click 刷新 in the plugin.
+- **`npm install` in `wallpaper-engine-api` fails with `EALLOWREMOTE`, or stalls?** The repository ships a lock file whose `resolved` URLs pin a mirror (`registry.npmmirror.com`). npm 12+ defaults to `allow-remote=none`, so it refuses a tarball from a host other than your configured registry (`EALLOWREMOTE: Fetching packages of type "remote" have been disabled`); a mirror your network cannot reach stalls the same fetch. `启动服务.bat` walks a bounded three-step bootstrap instead of stopping: `npm install` → `npm install --allow-remote=all` (allow the mirror the lock file points at) → `npm install --no-package-lock` (ignore the lock file and resolve through your own registry). Installing by hand, run those same commands in `wallpaper-engine-api/`.
+- **I started the service and nothing happened at all?** That is the silent launcher (`启动服务-静默.vbs`, or the autostart entry) running without a usable `we-api.config` / `node_modules`: it has no wizard, opens no window and fails silently — the only trace is a stack trace at the end of `wallpaper-engine-api/we-api.log`. Run `启动服务.bat` once (it walks the wizard and writes `we-api.config`); the silent variant works from then on.
+- **Wallpapers removed in WE still show up?** The service filters by the Steam subscription list, so unsubscribed wallpapers disappear — click 刷新 in the plugin. If the list itself looks wrong because the service is **outdated** (today's service reports `"version": "0.5.1"`, `"webShim": 1` and `"monitorSelect": 1` at `http://127.0.0.1:8088/health`), note that `重启服务(管理员).bat` only restarts it and cannot upgrade: run `git pull` in the repository, `npm install` in `wallpaper-engine-api/`, then restart.
 
 ## License
 

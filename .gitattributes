@@ -1,0 +1,17 @@
+# Windows launchers MUST be checked out with CRLF line endings.
+#
+# cmd.exe parses a .bat by byte offset rather than by line: given a file whose
+# lines end in a bare LF it seeks to the wrong position and starts executing
+# mid-line, producing storms of
+#   "'...' is not recognized as an internal or external command"
+# Windows Script Host is more forgiving, but CRLF is still the correct form.
+#
+# Without these rules the line endings depend on the *cloner's* core.autocrlf:
+# Git for Windows defaults to true (checks out CRLF, so everything looks fine),
+# but core.autocrlf=false / input — or cloning on a non-Windows host and running
+# the scripts over a share — yields LF and breaks 启动服务.bat /
+# 重启服务(管理员).bat. `text` keeps LF in the repository and `eol=crlf` forces
+# CRLF in every working tree, so the scripts work for everyone.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.vbs text eol=crlf

@@ -5,3 +5,7 @@ we-api.config
 .DS_Store
 *.tsbuildinfo
 .install-*.json
+# DSH 应用解包 / 分析产物（本地临时，不随仓库发布）
+app-extract/
+tools/
+asar-filelist.txt

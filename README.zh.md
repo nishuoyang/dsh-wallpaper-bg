@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-> v0.5.4 · MIT License
+> v0.5.5 · MIT License
 
 [![npm version](https://img.shields.io/npm/v/dsh-wallpaper-bg?label=npm&color=cb3837)](https://www.npmjs.com/package/dsh-wallpaper-bg)
 [![npm downloads](https://img.shields.io/npm/dm/dsh-wallpaper-bg?label=downloads)](https://www.npmjs.com/package/dsh-wallpaper-bg)
@@ -52,9 +52,9 @@
 
 ### 前提条件
 
-- **DeepSeek Harness 桌面端（0.2 预览版或更新）**——不需要额外装任何东西：桌面端自带 Node.js / pnpm 运行时，**无需自装 Node**；
+- **DeepSeek Harness 桌面端（0.2 预览版或更新）**——插件本体不需要额外装任何东西：桌面端自带 Node.js / pnpm 运行时，**无需自装 Node**；
 - **或者命令行方式**（`dsh web`）：Node.js ≥ 20（`node -v` 检查）+ 能正常启动的 DeepSeek Harness；
-- 仅「WE 壁纸库」来源需要 Windows + 本机 Wallpaper Engine（可选组件，见下文）。
+- 可选的「WE 壁纸库」来源另有前提：Windows + 本机 Wallpaper Engine + **PATH 里有 Node.js**——服务是独立的 Node 进程，桌面端自带的运行时管不到它，详见[可选组件：WE 壁纸库服务](#可选组件we-壁纸库服务windows)。
 
 ### 桌面端安装（无需命令行）
 
@@ -91,10 +91,10 @@ dsh plugin --profile web add dsh-wallpaper-bg
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg@latest    # 升到最新发布版
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.4     # 或锁定某个具体版本
+dsh plugin --profile web add dsh-wallpaper-bg@0.5.5     # 或锁定某个具体版本
 ```
 
-> **pnpm 11 只安装「发布满一天」的版本。** pnpm 11 默认开启 24 小时的 `minimumReleaseAge`（供应链保护）：某版本发布后约一天内，`dsh plugin … add dsh-wallpaper-bg` 只会解析到**上一个版本**，并打印 `(0.5.4 is available)`；`@latest` 同样受这个门槛限制。想立刻装上刚发布的版本，可以：写死版本号（`dsh-wallpaper-bg@0.5.4`）、加 `--config.minimumReleaseAge=0`，或在 profile 的 `pnpm-workspace.yaml` 里把本包排除：
+> **pnpm 11 只安装「发布满一天」的版本。** pnpm 11 默认开启 24 小时的 `minimumReleaseAge`（供应链保护）：某版本发布后约一天内，`dsh plugin … add dsh-wallpaper-bg` 只会解析到**上一个版本**，并打印 `(0.5.5 is available)`；`@latest` 同样受这个门槛限制。想立刻装上刚发布的版本，可以：写死版本号（`dsh-wallpaper-bg@0.5.5`）、加 `--config.minimumReleaseAge=0`，或在 profile 的 `pnpm-workspace.yaml` 里把本包排除：
 >
 > ```yaml
 > minimumReleaseAgeExclude:
@@ -107,18 +107,51 @@ dsh plugin --profile web add dsh-wallpaper-bg@0.5.4     # 或锁定某个具体�
 
 「WE 壁纸库」来源需要 `wallpaper-engine-api/` 服务，它把 Wallpaper Engine 已安装壁纸列表以只读 HTTP API 暴露在 `127.0.0.1:8088`：
 
-> 该服务只随**仓库**提供，不在 npm 包里（npm tarball 只含插件本体：`lib/`、`bin/`、`cordis.patch.yml` 与文档）。从 npm 安装、又想要「WE 壁纸库」来源的用户，请 clone <https://github.com/nishuoyang/dsh-wallpaper-bg>；不需要它的话，内置壁纸与自定义上传都不受影响。插件面板的「WE 壁纸库」标签在连不上服务时也会给出同样的提示。
+> 该服务只随**仓库**提供，不在 npm 包里（npm tarball 只含插件本体，不含 `wallpaper-engine-api/`）。从 npm 安装、又想要「WE 壁纸库」来源的用户，请执行 `git clone https://github.com/nishuoyang/dsh-wallpaper-bg`；不需要它的话，内置壁纸与自定义上传都不受影响。插件面板的「WE 壁纸库」标签在连不上服务时也会给出同样的提示。
 
-1. 进入 `wallpaper-engine-api/` 目录，执行 `npm install`；
-2. 双击 `启动服务.bat`（首次运行会引导写入安装路径；也可用 `启动服务-静默.vbs` 静默启动）；
-3. 可选：双击 `设置开机自启.bat`，把静默启动脚本注册到注册表（`HKCU\...\Run`），登录 Windows 时后台自动启动；取消请双击 `取消开机自启.bat`（脚本直接引用本目录的 `启动服务-静默.vbs`，移动过目录后请重新设置一次）；
-4. 之后升级 / 重启服务一律双击 `重启服务(管理员).bat`：自动请求管理员权限、结束旧进程并静默重启，等待端口就绪（全程日志见 `restart-debug.log`）。
+按这个顺序准备——服务是独立的 Node 进程，**DSH 自带的 Node 运行时管不到它**：
+
+1. **Windows + 本机已安装 Wallpaper Engine。** 服务只读取 WE 自己的文件，所以 WE 必须事先装好；找不到可用的 WE 安装，进程会以退出码 1 结束。它只查注册表里的 Steam 路径和几个常见 Steam 目录，因此装在**第二个 Steam 库**里的 WE（例如 `D:\SteamLibrary\steamapps\common\wallpaper_engine`）**不会被自动探测到**——第 5 步可以在向导里手动粘贴路径。
+2. **PATH 里有 Node.js**（`node -v` 能跑）——系统级安装，和桌面端自带的运行时是两回事。没有它，`启动服务.bat` 会直接停在 `[ERROR] Node.js not found in PATH.`。
+3. **clone 仓库**（服务不在 npm 包里）：
+
+   ```bash
+   git clone https://github.com/nishuoyang/dsh-wallpaper-bg
+   ```
+
+4. **在 `wallpaper-engine-api/` 里装依赖**：
+
+   ```bash
+   cd wallpaper-engine-api
+   npm install
+   ```
+
+   若失败（例如 `EALLOWREMOTE`，或网络到不了锁文件里指向的镜像），第 5 步的启动脚本会走同样的兜底步骤，详见下方常见问题。
+5. **双击 `启动服务.bat`**——首次运行的入口。它先查端口与 Node.js、缺依赖就补装；`we-api.config` 不存在时依次询问 WE 安装路径（探测到就直接回车确认；也可以粘贴 `wallpaper64.exe`、它所在的目录，或你的 Steam 目录）与订阅壁纸库目录（直接回车用推导出的默认值 `...\steamapps\workshop\content\431960`）。写入 `we-api.config` 后脚本会在当前窗口里启动服务，`Ctrl+C` 或关闭窗口即停止。之后随时可以用 `启动服务.bat /setup` 重跑向导。
+6. 可选：双击 `设置开机自启.bat`，把静默启动脚本注册到注册表（`HKCU\...\Run`），登录 Windows 时后台自动启动；取消请双击 `取消开机自启.bat`（脚本直接引用本目录的 `启动服务-静默.vbs`，移动过目录后请重新设置一次）。
+
+**首次运行 vs. 后台启动。** `we-api.config` 生成之后，`启动服务-静默.vbs` 才会无窗口地把同一个服务跑起来（开机自启项跑的就是它），输出追加到 `we-api.log`。**首次运行请一律走 `启动服务.bat`**：静默启动没有向导，缺少 `node_modules` 或 `we-api.config` 时会**完全静默地**失败——连窗口都不会有，唯一痕迹是 `we-api.log` 末尾的一段堆栈。双击了却「什么都没发生」，就是这种情况：改用 `启动服务.bat`。
+
+**日志**（都在 `wallpaper-engine-api/` 下，均已 gitignore）：`we-api.log` 是静默 / 开机自启路径写下的服务输出，`restart-debug.log` 记录 `重启服务(管理员).bat` 做了什么（结束进程的尝试、提权、等待端口）。服务没响应时先看这两个文件。
+
+> **重启不等于升级。** `重启服务(管理员).bat` 只做两件事：结束占用 8088 的进程，再通过静默启动器重新拉起 `node server.js`（需要时自动请求管理员权限，随后等待端口就绪）。它**既不 `git pull` 也不 `npm install`**，因此永远拿不到新代码——升级 = 仓库里 `git pull` + `wallpaper-engine-api` 里 `npm install` + 重启。
+
+**非交互 / 无人值守安装（跳过向导）。** `we-api.config` 就是 `server.js` 同目录下的纯 `KEY=value` 文件，向导只写两个键，自己写好就完全不用交互：
+
+```ini
+WE_INSTALL_PATH=D:\Steam\steamapps\common\wallpaper_engine
+WE_WORKSHOP_PATH=D:\Steam\steamapps\workshop\content\431960
+```
+
+也可以直接在 `wallpaper-engine-api/` 里 `node server.js`——向导只是套在它外面的一层便利。同样的配置还支持环境变量，且优先级高于 `we-api.config`：`WE_INSTALL_PATH`、`WE_WORKSHOP_PATH`、`WE_SUBSCRIPTIONS_FILE`（显式指定 `431960_subscriptions.vdf`）与 `WEAPI_PORT`。
+
+> `WEAPI_PORT` 只改**服务自己**的端口：启动脚本把 8088 写死了（`启动服务.bat` 检测到 8088 被占用就拒绝启动，`重启服务(管理员).bat` 也只结束 / 等待 8088），换端口必须同时改这两个脚本，并把插件设置里的基地址改成一致。
 
 服务**只读**：仅调用列表 / 当前壁纸查询，绝不触碰设置或播放接口；未检测到 WE 运行时也不会拉起 WE 主程序。列表按 Steam 真实订阅清单（`431960_subscriptions.vdf`）过滤——在 WE 里退订 / 本地禁用的壁纸即使文件夹残留也不会再出现，与 WE 界面一致。
 
-**0.5.0 起服务回归纯只读的列表 / 文件服务**：`/health`、`/api/wallpapers`、`/api/current`、`/files/<id>/...`。0.4.x 的桌面画面捕获 `GET /capture?w=&q=`（`PrintWindow(Progman, …)` 采样桌面 + `koffi` / `jpeg-js`）与 0.3.x 的本地场景渲染器（`/scene-frame`、`/scene-anim`、`lib/we-renderer/`）一样已**整体移除**——旧端点一律返回 `404`，`/health` 不再上报 `desktopCapture`，只保留 `"webShim": 1`、`"weRunning"` 与 0.5.1 起的 `"monitorSelect": 1`（当前壁纸支持指定显示器）。服务不解析 `scene.pkg`、不生成帧 / 视频、不采样桌面、不创建 `~/.dsh-wallpaper-bg`；场景壁纸由插件端显示 WE 工坊预览图（`preview.gif` / `preview.jpg`）。
+**0.5.0 起服务回归纯只读的列表 / 文件服务**：`/health`、`/api/wallpapers`、`/api/current`、`/files/<id>/...`。0.4.x 的桌面画面捕获 `GET /capture?w=&q=`（`PrintWindow(Progman, …)` 采样桌面 + `koffi` / `jpeg-js`）与 0.3.x 的本地场景渲染器（`/scene-frame`、`/scene-anim`、`lib/we-renderer/`）一样已**整体移除**——旧端点一律返回 `404`，`/health` 不再上报 `desktopCapture`——现在返回 `"version": "0.5.1"`，以及能力标记 `"webShim": 1` 与 0.5.1 起的 `"monitorSelect": 1`（当前壁纸支持指定显示器），另有 `weInstallPath` / `workshopPath` / `subscriptionsFile` / `weRunning`。服务不解析 `scene.pkg`、不生成帧 / 视频、不采样桌面、不创建 `~/.dsh-wallpaper-bg`；场景壁纸由插件端显示 WE 工坊预览图（`preview.gif` / `preview.jpg`）。
 
-> 验证：浏览器打开 `http://127.0.0.1:8088/health` 返回 JSON 即 WE 服务正常；插件侧则看 `<DSH 地址>/dsh-wallpaper-bg/health`——`dsh web` 默认端口 3080，即 `http://127.0.0.1:3080/dsh-wallpaper-bg/health`；桌面端固定 **19387**（0.2 桌面端启动 `desktop` profile 时写死 `--port 19387`），即 `http://127.0.0.1:19387/dsh-wallpaper-bg/health`。界面里同样能确认：**设置 → 插件** 里能看到 `dsh-wallpaper-bg`、**设置 → 壁纸** 能打开面板。端口 8088 是历史选择（8080 曾被 Jenkins 占用）；换端口用环境变量 `WEAPI_PORT`，并在插件设置面板里把基地址改成对应值。
+> 验证：浏览器打开 `http://127.0.0.1:8088/health` 返回 JSON 即 WE 服务正常；插件侧则看 `<DSH 地址>/dsh-wallpaper-bg/health`——`dsh web` 默认端口 3080，即 `http://127.0.0.1:3080/dsh-wallpaper-bg/health`；桌面端固定 **19387**（0.2 桌面端启动 `desktop` profile 时写死 `--port 19387`），即 `http://127.0.0.1:19387/dsh-wallpaper-bg/health`。界面里同样能确认：**设置 → 插件** 里能看到 `dsh-wallpaper-bg`、**设置 → 壁纸** 能打开面板。端口 8088 是历史选择（8080 曾被 Jenkins 占用）。
 
 ## 设置面板说明
 
@@ -153,8 +186,8 @@ dsh plugin --profile web add dsh-wallpaper-bg@0.5.4     # 或锁定某个具体�
 
 - **桌面端怎么装？** 不用命令行：**设置 → 插件** → 输入包名 `dsh-wallpaper-bg` → 安装 → 按提示重启桌面端。装好后会出现在同一个插件页面里（可停用 / 卸载，也能看插件介绍与来源）。终端等价命令（需先装上桌面端提供的 `dsh` 命令）：`dsh plugin --profile desktop add dsh-wallpaper-bg`。
 - **桌面端为什么 `dsh --profile desktop …` 报错？** 那个 profile 归 Electron 应用独占，终端启动会被拒绝：`profile "desktop" is managed exclusively by the Electron application`。这是设计如此——profile 由应用自己组合并启动。`dsh plugin --profile desktop <pnpm 参数>`（安装 / 列表 / 卸载）仍然可用，因为它只改 profile 的包清单。本包的 `dsh-wallpaper-bg install` 因此也会跳过 `desktop` 并提示走插件页面。
-- **桌面端需要 Node.js 吗？需要 WE 服务吗？** Node.js 不需要——桌面端自带 Node / pnpm 运行时，只有 `dsh web` 命令行方式才要求 Node ≥ 20。可选的「WE 壁纸库」来源不受影响：仍然需要 Windows + 本机 Wallpaper Engine + 8088 端口的 `wallpaper-engine-api` 服务，和 `dsh web` 一致。
-- **装完发现版本比 npm 上的旧？** 是 pnpm 11 默认的 24 小时 `minimumReleaseAge` 门槛，见上文[升级](#升级为什么只跑-add-不会升级)。想立刻装上就写死版本：`dsh plugin --profile web add dsh-wallpaper-bg@0.5.4`。
+- **桌面端需要 Node.js 吗？需要 WE 服务吗？** 插件本体不需要——桌面端自带 Node / pnpm 运行时，只有 `dsh web` 命令行方式才要求 Node ≥ 20。可选的「WE 壁纸库」是例外：它的服务是跑在 DSH 之外的独立 Node 进程，所以桌面端也要求 **PATH 里有 Node.js**；此外仍然需要 Windows + 本机 Wallpaper Engine + 8088 端口的 `wallpaper-engine-api` 服务，和 `dsh web` 一致，见[可选组件：WE 壁纸库服务](#可选组件we-壁纸库服务windows)。
+- **装完发现版本比 npm 上的旧？** 是 pnpm 11 默认的 24 小时 `minimumReleaseAge` 门槛，见上文[升级](#升级为什么只跑-add-不会升级)。想立刻装上就写死版本：`dsh plugin --profile web add dsh-wallpaper-bg@0.5.5`。
 - **装完了，但 设置 → 壁纸 里没有面板？** 先确认这个 profile 真把它当组合层加载：`profiles/<name>/package.json` 的 `dsh.profile.bundles` 里要有 `dsh-wallpaper-bg`——`dsh-wallpaper-bg status` 也会报这一点（在 bundles 里显示 `installed（bundle 层…）`，只装了依赖、没进 bundles 时会明确提示重跑一次 `add`）。这一项由 DSH 安装时自己回填；版本刚发布不久、注册表还在传播时偶尔会漏写，重跑 `dsh plugin --profile web add dsh-wallpaper-bg@<版本>` 即可补上。另一半检查是 `<DSH 地址>/dsh-wallpaper-bg/health` 返回 JSON。
 - **能装进 `headless` / `tui` / 自建 profile 吗？** 可以，而且无害：插件只在宿主的 `webServer` 服务存在时才注册路由，没有 Web 界面的 profile 会照常启动、插件静默不生效（这个修复之前，这类 profile 会直接以 `1 entry did not activate` 启动失败）。不过装在那种 profile 里没有意义——壁纸界面在浏览器页面里——请装进 `web`，或桌面端的 `desktop` profile。
 - **桌面端怎么确认插件加载了？** 打开 `http://127.0.0.1:19387/dsh-wallpaper-bg/health`，返回 `{"ok":true,"plugin":"dsh-wallpaper-bg","version":"…"}` 即宿主半已挂载（0.2 桌面端固定用 19387 端口跑 `desktop` profile）。界面里也能确认：**设置 → 插件** 里列出 `dsh-wallpaper-bg`（已安装 / 已启用），**设置 → 壁纸** 能打开面板。
@@ -164,14 +197,16 @@ dsh plugin --profile web add dsh-wallpaper-bg@0.5.4     # 或锁定某个具体�
   - *预览图很小、放大后发虚*：WE 的工坊预览图普遍只有 **192×192** 像素（状态行会实测列出，例如「实测 192×192 像素，全屏放大后必然发虚」）——这是预览图本身的尺寸，**不是缓存里的旧图、也不是没生效**；
   - *想要 100% 保真的动态场景*：用 WE 托盘菜单的屏幕录制（或 OBS）把场景录 30 秒左右导出 MP4，再通过「自定义上传」传进来——浏览器里用原生 `<video>` 播放，完整流畅、零额外开销。
 - **还有本地场景渲染 / 烘焙，或者桌面画面捕获吗？** 都没有了。纯 JS 场景渲染器（`lib/we-renderer/`、`scene.pkg` 解析、shader 效果）与动画烘焙整套（`/scene-anim`、`~/.dsh-wallpaper-bg` 帧 / MP4 缓存）在 **0.4.0 已彻底移除**，`WE_SCENE_RENDER` 开关一并删除；0.4.x 用来镜像桌面的画面捕获（`/capture`，`koffi` + `jpeg-js`）在 **0.5.0 移除**。旧端点一律 `404`，服务不再写 `~/.dsh-wallpaper-bg`（历史遗留目录可直接删除）。
-- **网页类壁纸（web 类型）能正常显示吗？** 能——web 壁纸本来就是 HTML/JS 网页，插件会用 iframe 全屏原生渲染 `index.html` 及其相对资源（由 WE API 的 `/files/<id>/...` 目录路由只读提供，仅限已订阅壁纸目录）。WE API 0.2.6 起还会给网页注入一层 **WE 私有接口垫片**：把 `project.json` 里的默认用户属性喂给 `applyUserProperties`（否则只在属性回调里设置背景图的壁纸会只剩角色立在纯黑底上，看起来像一张竖屏壁纸），并提供音频 / 媒体接口占位与「已画出内容」上报——插件据此在壁纸真正有画面时才叠化入场，不再黑屏或空等。注意：背景层不拦截鼠标，所以壁纸的鼠标交互（点击、拖拽）不会生效，仅视觉效果；音频可视化会以静音数据运行（浏览器里没有 WE 的音频采集）。
-- **网页壁纸黑屏 / 半天不出画面？** 先确认 WE API 服务已升级到 0.2.6 并重启（`http://127.0.0.1:8088/health` 应含 `"webShim": 1`），旧版服务没有垫片，也没修 `../assets/...` 这类按 `file://` 写的相对路径。
+- **网页类壁纸（web 类型）能正常显示吗？** 能——web 壁纸本来就是 HTML/JS 网页，插件会用 iframe 全屏原生渲染 `index.html` 及其相对资源（由 WE API 的 `/files/<id>/...` 目录路由只读提供，仅限已订阅壁纸目录）。当前服务（0.5.1）还会给网页注入一层 **WE 私有接口垫片**：把 `project.json` 里的默认用户属性喂给 `applyUserProperties`（否则只在属性回调里设置背景图的壁纸会只剩角色立在纯黑底上，看起来像一张竖屏壁纸），并提供音频 / 媒体接口占位与「已画出内容」上报——插件据此在壁纸真正有画面时才叠化入场，不再黑屏或空等。注意：背景层不拦截鼠标，所以壁纸的鼠标交互（点击、拖拽）不会生效，仅视觉效果；音频可视化会以静音数据运行（浏览器里没有 WE 的音频采集）。
+- **网页壁纸黑屏 / 半天不出画面？** 先确认 WE API 服务已是当前版本（0.5.1）并重启（`http://127.0.0.1:8088/health` 应含 `"webShim": 1`），过旧的服务没有垫片，也没修 `../assets/...` 这类按 `file://` 写的相对路径。
 - **网页壁纸切换时资源反复重下？** 0.3.8 已修：服务 `/files` 路由原来整读文件且返回 `no-store`，现在流式发送 + `ETag` / `Last-Modified` 条件请求（HTML `no-cache`、静态资源 300 秒缓存）并支持 `Range`。
 - **视频有黑边？** 用「安全放大」拉 2–3% 即可裁掉画面自带的黑边（渲染层的 cover 裁剪已保证不自造黑边）。
 - **上传的视频黑屏 / 黑色占位？** 浏览器 `file.type` 为空的视频（常见于 .mkv / .mov）现在会按扩展名识别并走视频渲染，且每个视频都会自动生成首帧缩略图；若个别文件仍是黑的，多半是该编码浏览器不支持。
 - **改了代码不生效？** 分两半看：只改 `lib/client.js`（浏览器半）时**普通刷新页面（F5）即可**——客户端 bundle 每次请求都从磁盘现读（`cache-control: no-cache`）；改 `lib/host.js`（宿主半）或 `bin/` 之后**必须重启 DSH**（宿主半是 Node 侧 ESM 模块，随进程启动加载、进程内不会重新导入）——`dsh web` 重启进程，桌面端退出应用再打开。增删插件行 / 修改 `dsh.client` 声明等插件集合变化同样需要重启。判断当前跑的是哪版宿主半：打开 `<DSH 地址>/dsh-wallpaper-bg/health` 看 `version`（桌面端固定 19387 端口）。
 - **WE 壁纸库报错？** 确认 `wallpaper-engine-api` 服务在 8088 端口运行（浏览器访问 `http://127.0.0.1:8088/health` 验证），且插件设置里的基地址一致。
-- **在 WE 里删掉的壁纸还在插件里？** 服务会按 Steam 订阅清单过滤，退订的壁纸不再列出；若服务还是旧版本（`/health` 没有 `subscriptionsFile` 字段），双击 `重启服务(管理员).bat` 升级，然后点插件里的「刷新」。
+- **在 `wallpaper-engine-api` 里 `npm install` 报 `EALLOWREMOTE`，或一直卡住？** 仓库里的锁文件把 `resolved` 固定在镜像 `registry.npmmirror.com` 上。npm 12 起默认 `allow-remote=none`，会拒绝主机与当前配置源不一致的 tarball（`EALLOWREMOTE: Fetching packages of type "remote" have been disabled`）；网络到不了该镜像时同样一直取不到包。`启动服务.bat` 用有界的三步引导兜底、而不是直接失败：`npm install` → `npm install --allow-remote=all`（放行锁文件指向的镜像）→ `npm install --no-package-lock`（忽略锁文件，改用你 `.npmrc` 里配置的源）。手工安装时按同样顺序执行即可。
+- **双击启动服务后「什么都没发生」？** 那是没有可用的 `we-api.config` / `node_modules` 时跑了静默启动（`启动服务-静默.vbs`，或开机自启项）：它没有向导、不开窗口，失败时完全静默，唯一痕迹是 `wallpaper-engine-api/we-api.log` 末尾的堆栈。先跑一次 `启动服务.bat`（走向导写出 `we-api.config`），之后静默启动才可用。
+- **在 WE 里删掉的壁纸还在插件里？** 服务会按 Steam 订阅清单过滤，退订的壁纸不再列出，点插件里的「刷新」即可。若怀疑是服务过旧（当前服务版本 **0.5.1**，`http://127.0.0.1:8088/health` 应含 `"webShim": 1` 与 `"monitorSelect": 1`）：注意 `重启服务(管理员).bat` 只能重启、**不能升级**——升级要在仓库里 `git pull`、在 `wallpaper-engine-api` 里 `npm install`，然后再重启。
 
 ## 开源
 

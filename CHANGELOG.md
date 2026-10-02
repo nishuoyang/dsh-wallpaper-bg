@@ -2,7 +2,25 @@
 
 本文件记录 dsh-wallpaper-bg 的用户可见变更。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
-> 发版时把下面的 `## [未发布]` 改成 `## [x.y.z] - YYYY-MM-DD`（`scripts/release.ps1` 要求存在对应版本条目）。
+> 发版时把下面的 `## [0.5.5] - 2026-10-02` 改成 `## [x.y.z] - YYYY-MM-DD`（`scripts/release.ps1` 要求存在对应版本条目）。
+
+## [0.5.5] - 2026-10-02
+
+### 修复
+
+- **新克隆的仓库装依赖时 `npm install` 直接失败（`EALLOWREMOTE`）**：`wallpaper-engine-api/package-lock.json` 把每个包的 `resolved` 地址写死为 `https://registry.npmmirror.com/...`，而 npm 12 起默认 `allow-remote=none`，会拒绝主机与当前配置源不一致的 tarball，于是 `npm install` 硬失败：`EALLOWREMOTE: Fetching packages of type "remote" have been disabled`（实测 npm 12.0.2 + 该 lock 文件退出码 1、去掉 lock 文件后退出码 0；npm 11.21.0 + 该 lock 文件退出码 0）。启动脚本以前只把这种情况报成 `npm install failed. Check your network / npm registry.`，把用户引向并没有问题的网络与源，然后直接退出——新用户到此彻底卡死。
+- **`启动服务.bat` 的依赖补装改为三级兜底**：`npm install` 失败时，依次追加 `--allow-remote=all`（放行 lock 文件里指向另一个 registry 的 tarball，对应上面的 `EALLOWREMOTE`）与 `--no-package-lock`（忽略 lock、改按用户 `.npmrc` 里配置的源解析）各重试一次，每一步都打印原因，三次都失败才提示手动执行 `npm install` 看完整报错。**保留 lock 文件是有意的**：本机实测 `registry.npmjs.org` 连接超时、`registry.npmmirror.com` 0.5 秒返回 200，lock 里写死的镜像地址让安装*不依赖*用户配置的源，删掉它反而会让 `npm install` 卡住。
+- **`.bat` / `.cmd` / `.vbs` 的行尾不再取决于克隆者的 `core.autocrlf`**：cmd.exe 按字节偏移而不是按行解析批处理，行尾若是裸 LF 就会定位到行中间、开始执行半截命令，刷出一片 `'...' is not recognized as an internal or external command`——`启动服务.bat` / `重启服务(管理员).bat` 都可能因此启动失败。Git for Windows 默认 `core.autocrlf=true`（检出为 CRLF）掩盖了这一点，`core.autocrlf=false` / `input` 或在非 Windows 主机克隆后再经共享目录运行就会踩到。新增 `.gitattributes` 固定 `*.bat` / `*.cmd` / `*.vbs` 为 `text eol=crlf`（仓库内仍存 LF，检出统一为 CRLF）。
+- **面板里「WE 壁纸库」连不上服务时的提示改推 `启动服务.bat`**：原文让用户双击 `启动服务-静默.vbs`，而静默启动没有首次运行向导，缺少 `node_modules` 或 `we-api.config` 时会**完全静默地**失败——连窗口都不弹，唯一痕迹是 `we-api.log` 末尾的堆栈。现在提示改为 `启动服务.bat`（首次运行走向导并写出 `we-api.config`），静默脚本只作为后台 / 开机自启方式；`bin/dsh-wallpaper-bg.js` 的提示沿用同样的说法。
+
+### 文档
+
+- **README / README.zh.md 的「WE 壁纸库服务」小节按真实首次运行流程重写**，顺序为：(a) Windows + 本机 Wallpaper Engine（服务必需；装在第二个 Steam 库时不会被自动探测，需要在向导里粘贴路径）、(b) **PATH 里有 Node.js**（服务是独立的 Node 进程，桌面端自带的运行时管不到它，缺了会停在 `[ERROR] Node.js not found in PATH.`）、(c) `git clone https://github.com/nishuoyang/dsh-wallpaper-bg`、(d) `wallpaper-engine-api` 里 `npm install`、(e) 双击 `启动服务.bat` 回答向导。同时写明首次运行请走 `启动服务.bat`（`/setup` 可重跑向导），`启动服务-静默.vbs` 只用于后台 / 开机自启；双击后「什么都没发生」正是静默启动缺配置的表现，改用 `启动服务.bat` 即可。
+- **补文档化两个诊断文件**：`wallpaper-engine-api/we-api.log`（静默 / 开机自启路径写下的服务输出）与 `wallpaper-engine-api/restart-debug.log`（`重启服务(管理员).bat` 的停进程 / 提权 / 等待端口记录），两者都已 gitignore。
+- **纠正「重启 = 升级」的旧说法**：`重启服务(管理员).bat` 只结束占用 8088 的进程、再以静默方式拉起 `node server.js`，既不 `git pull` 也不 `npm install`，**不能升级服务**；升级 = 仓库里 `git pull` + `wallpaper-engine-api` 里 `npm install` + 重启。FAQ 里判断服务是否过旧的依据也从已失效的 `subscriptionsFile`（现在任何版本都会输出该键，可能为 `null`）改为当前能力标记 `"webShim": 1` / `"monitorSelect": 1`（服务版本 **0.5.1**）。
+- **补非交互 / 无人值守安装方式**：`we-api.config` 是 `server.js` 同目录下的纯 `KEY=value` 文件（向导写 `WE_INSTALL_PATH=` / `WE_WORKSHOP_PATH=`），也可改用 `WE_INSTALL_PATH` / `WE_WORKSHOP_PATH` / `WE_SUBSCRIPTIONS_FILE` / `WEAPI_PORT` 环境变量（优先级高于配置文件），并可直接在 `wallpaper-engine-api` 里执行 `node server.js`。
+- **说明 `WEAPI_PORT` 只改服务端口**：启动脚本把 8088 写死（`启动服务.bat` 检测 8088、`重启服务(管理员).bat` 结束 / 等待 8088），换端口必须同时改这两个脚本，并同步插件设置里的基地址。
+- **FAQ 清理与补齐**：删除 README.md 里重复的「Do web-type wallpapers render?」条目（保留内容更新的那一条，README.zh.md 本来就只有一条）；「服务要升级到 0.2.6」这类过时要求改为「当前服务（0.5.1）」；补上完整的 `git clone` 命令；npm tarball 说明去掉不准确的内容枚举（tarball 只含插件本体，不含 `wallpaper-engine-api/`）；新增两条 FAQ——`npm install` 报 `EALLOWREMOTE` / 取不到包时的三步兜底命令，以及「双击启动服务后什么都没发生」= 静默启动缺配置、改用 `启动服务.bat`。
 
 ## [0.5.4] - 2026-10-01
 
