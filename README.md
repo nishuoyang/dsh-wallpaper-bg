@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-> v0.5.8 · MIT License
+> v0.5.9 · MIT License
 
 [![npm version](https://img.shields.io/npm/v/dsh-wallpaper-bg?label=npm&color=cb3837)](https://www.npmjs.com/package/dsh-wallpaper-bg)
 [![npm downloads](https://img.shields.io/npm/dm/dsh-wallpaper-bg?label=downloads)](https://www.npmjs.com/package/dsh-wallpaper-bg)
@@ -91,10 +91,10 @@ dsh plugin --profile web add dsh-wallpaper-bg
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg@latest    # move to the newest release
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.8     # or pin an exact version
+dsh plugin --profile web add dsh-wallpaper-bg@0.5.9     # or pin an exact version
 ```
 
-> **pnpm 11 installs a release only after it is a day old.** pnpm 11 enables a 24 h `minimumReleaseAge` by default as supply-chain protection, so for roughly a day after a publish `dsh plugin … add dsh-wallpaper-bg` resolves to the *previous* version and prints `(0.5.8 is available)`; `@latest` is gated the same way. To take a fresh release immediately, name the exact version (`dsh-wallpaper-bg@0.5.8`), pass `--config.minimumReleaseAge=0`, or exclude the package in the profile's `pnpm-workspace.yaml`:
+> **pnpm 11 installs a release only after it is a day old.** pnpm 11 enables a 24 h `minimumReleaseAge` by default as supply-chain protection, so for roughly a day after a publish `dsh plugin … add dsh-wallpaper-bg` resolves to the *previous* version and prints `(0.5.9 is available)`; `@latest` is gated the same way. To take a fresh release immediately, name the exact version (`dsh-wallpaper-bg@0.5.9`), pass `--config.minimumReleaseAge=0`, or exclude the package in the profile's `pnpm-workspace.yaml`:
 >
 > ```yaml
 > minimumReleaseAgeExclude:
@@ -190,7 +190,7 @@ Zero build on both ends: `lib/client.js` is a hand-written single-file bundle, n
 - **How do I install this in the DSH desktop app?** No command line needed: **Settings → Plugins** (设置 → 插件) → type `dsh-wallpaper-bg` → install → restart the app when it asks. The app keeps it in its own `desktop` profile and the same page lets you disable / uninstall it and see its description and source. The terminal equivalent (with the app's `dsh` command on PATH) is `dsh plugin --profile desktop add dsh-wallpaper-bg`.
 - **Why does `dsh --profile desktop …` fail on the command line?** The desktop app owns that profile: DSH answers `profile "desktop" is managed exclusively by the Electron application`. That is by design — the app composes and boots the profile itself. `dsh plugin --profile desktop <pnpm args>` (install / list / remove) still works, because that path only manages the profile's package manifest. This package's `dsh-wallpaper-bg install` therefore skips `desktop` and points you at the plugin page.
 - **Does the desktop app need Node.js, or the `wallpaper-engine-api` service?** Node.js, no — the desktop app bundles its own Node/pnpm runtime, so only a CLI install (`dsh web`) needs Node ≥ 20. The optional WE library source is the exception: its service is a Node process running outside DSH, so it needs **Node.js on PATH** even with the desktop app. It still needs Windows + a local Wallpaper Engine install + the service on port 8088, exactly as for `dsh web` — see [Optional: WE library service](#optional-we-library-service-windows).
-- **I installed it and got an older version than the one on npm.** pnpm 11's default 24 h `minimumReleaseAge` — see [Upgrading](#upgrading-and-why-add-alone-does-not-upgrade). Name the version (`dsh plugin --profile web add dsh-wallpaper-bg@0.5.8`) to take it immediately.
+- **I installed it and got an older version than the one on npm.** pnpm 11's default 24 h `minimumReleaseAge` — see [Upgrading](#upgrading-and-why-add-alone-does-not-upgrade). Name the version (`dsh plugin --profile web add dsh-wallpaper-bg@0.5.9`) to take it immediately.
 - **Installed it, but Settings → Wallpaper shows no panel?** Check that the profile really loads it as a layer: `profiles/<name>/package.json` must list `dsh-wallpaper-bg` under `dsh.profile.bundles` — `dsh-wallpaper-bg status` reports this too (it prints `installed（bundle 层…）` when the entry is there, and tells you to re-run `add` when only the dependency is present). DSH writes that list itself during install; while a brand-new release is still propagating through the registry the entry is occasionally missed, and re-running `dsh plugin --profile web add dsh-wallpaper-bg@<version>` fixes it. The other half of the check is `<DSH URL>/dsh-wallpaper-bg/health` answering JSON.
 - **Can I install it into a `headless` / `tui` / custom profile?** Yes, and it is harmless: the plugin registers its routes only while the host's `webServer` service exists, so a profile with no web UI boots normally with the plugin simply inert (before this fix such a profile failed to boot with `1 entry did not activate`). It is still pointless there — the wallpaper UI lives in the browser page — so install into `web`, or the desktop app's `desktop` profile.
 - **How do I verify it loaded on the desktop app?** Open `http://127.0.0.1:19387/dsh-wallpaper-bg/health` — `{"ok":true,"plugin":"dsh-wallpaper-bg","version":"…"}` means the host half is mounted (the 0.2 desktop app serves the `desktop` profile on the fixed port 19387). The rest is visible in the UI: **Settings → Plugins** lists `dsh-wallpaper-bg` as installed/enabled, and **Settings → Wallpaper** opens the panel.
