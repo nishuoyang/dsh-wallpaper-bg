@@ -4,6 +4,12 @@
 
 > 发版时把下面的 `## [未发布]` 改成 `## [x.y.z] - YYYY-MM-DD`（`scripts/release.ps1` 要求存在对应版本条目）。
 
+## [未发布]
+
+### 修复
+
+- **macOS 桌面端：装上插件后 DSH 窗口拖不动，双击也不放大**（`lib/client.js`，[#3](https://github.com/nishuoyang/dsh-wallpaper-bg/pull/3)，感谢 @wlabbyflower）：两个全屏层原先 `appendChild` 到 `<body>` 末尾，而 DSH 桌面端基础样式里有 `html[data-platform=darwin] body>:not(#root){-webkit-app-region:no-drag}` —— 它们各自成为一块覆盖整窗的 no-drag 区域，并且在文档顺序上排在所有 `[data-window-drag]` 标题行**之后**；Electron 合成拖拽区域时是「靠后的矩形覆盖靠前的」（`DraggableRegionsToSkRegion()` 按顺序逐条 union / difference），整窗拖拽区因此被抹掉（双击缩放依赖同一套区域，一起失效）。现在两层插到 `#root` **之前**，靠后的标题行反向覆盖它们。视觉与功能不变（仍是 `position:fixed; z-index:-1`，仍在所有 UI 之下）；Windows / Linux / 浏览器里没有这条 darwin 规则，行为完全不变。自查：本机用 Electron 44（与 DSH 桌面端同大版本）的无边框窗口 + 真实系统鼠标拖拽复现了「改前拖不动、改后正常拖动」，见 PR 里的验证记录。
+
 ## [0.5.8] - 2026-10-03
 
 ### 文档
