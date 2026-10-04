@@ -1,6 +1,6 @@
 {
   "name": "dsh-wallpaper-bg",
-  "version": "0.5.9",
+  "version": "0.5.10",
   "description": "DeepSeek Harness（dsh web 网页界面与 0.2 桌面端）独立壁纸背景插件：内置壁纸 / 自定义上传 / Wallpaper Engine 壁纸库（只读）三种来源，支持图片、视频、网页与场景工坊预览图，含遮罩·模糊·亮度·安全放大调节。WE 壁纸库来源需仓库内的 wallpaper-engine-api 服务（不在 npm 包内，插件面板会给出提示）。",
   "type": "module",
   "main": "lib/host.js",
@@ -31,7 +31,8 @@
     "README.zh.md",
     "LICENSE",
     "CHANGELOG.md",
-    "docs/screenshots"
+    "docs/screenshots",
+    "docs/troubleshooting.md"
   ],
   "keywords": [
     "deepseek-harness",

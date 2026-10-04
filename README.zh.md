@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-> v0.5.9 · MIT License
+> v0.5.10 · MIT License
 
 [![npm version](https://img.shields.io/npm/v/dsh-wallpaper-bg?label=npm&color=cb3837)](https://www.npmjs.com/package/dsh-wallpaper-bg)
 [![npm downloads](https://img.shields.io/npm/dm/dsh-wallpaper-bg?label=downloads)](https://www.npmjs.com/package/dsh-wallpaper-bg)
@@ -38,10 +38,10 @@
 - **零本地渲染、零缓存文件**：插件不解析 `scene.pkg`、不渲染场景帧、不烘焙视频、不采样桌面画面——不建 `~/.dsh-wallpaper-bg`、不落帧文件、不产 MP4。本地场景渲染器与烘焙整套代码在 **0.4.0 已彻底移除**，`WE_SCENE_RENDER` 开关一并删除；0.4.x 用来镜像桌面的画面捕获（`/capture`）也在 **0.5.0 移除**。
 - **四项调节**：浅色雾层 / 深色遮罩（随 DSH 主题自动切换）、背景模糊度（0–20px）、背景亮度（50–150%）、安全放大（0–10%，裁掉边缘黑边）。
 - **主页面原生背景开关**：一键清除浅色雾层、深色遮罩和页面表面的半透明覆盖，露出完整壁纸；输入框和弹窗保持原有可读底色。关闭后恢复原来的雾层 / 遮罩数值，开关状态会记住。
-- **无黑屏切换**：换壁纸（含队列循环切图）采用双层交叉淡入淡出——新壁纸先在自己的图层里预加载、解码 / 起播完成，再与旧壁纸叠化约 0.42 秒，旧层淡出结束才移除。图片、视频、场景预览、网页各种渲染都适用，切换过程中任何一帧都有画面，不会再闪一下黑屏。
+- **无黑屏切换**：换壁纸（含队列循环切图）采用双层交叉淡入淡出——新壁纸先在自己的图层里预加载、解码 / 起播完成，再与旧壁纸叠化约 0.42 秒，旧层淡出结束才移除。图片、视频、场景预览、网页各种渲染都适用，切换过程中任何一帧都有画面，不会再闪一下黑屏。视频路径还会等 `requestVideoFrameCallback` 上报「首帧已呈现」才进场——4K 视频从挂载到出画面可能有几百毫秒，这期间透出的是仍在播放的旧壁纸，而不是一块底色。
 - **下一张预热**：队列循环播放时，停留期间就提前把下一张拉好（网络图片提前下载解码、WE 视频提前建好 `<video>` 元素缓冲数据、自定义上传提前读库并建好 objectURL），到点切换几乎立刻开始叠化，不再干等下载。
 - **白场片头自动跳过**：部分壁纸视频本身开头是一段纯白片头（如《明日方舟》「喧闹法则」前 2 秒整帧纯白），预热时会探出正片起点并直接从那里开始播，切过去不会再看到一大片白。
-- **切换不残留后台解码**：旧图层淡出时会彻底停掉抽帧定时器并释放视频（`pause()` + 断开 `src`），循环列表切多少次都只保留当前这一路解码。实测连续切换 6 次帧率稳定在 58–60 fps（修复前会从 59.7 一路掉到 12.2 fps）。
+- **切换不残留后台解码**：旧图层淡出时先 `pause()`（保留最后一帧继续参与叠化，同时停掉解码），淡出结束、图层移除时才断开 `src` 彻底释放，循环列表切多少次都只保留当前这一路解码。实测连续切换 6 次帧率稳定在 58–60 fps（修复前会从 59.7 一路掉到 12.2 fps）。
 - **4K 视频不吃性能**：视频层用 `<video object-fit: cover>` 由合成器（GPU）缩放铺满，不再每帧 `drawImage` 到 canvas（4K 取一帧要 20–40ms），也去掉了 30fps 抽帧定时器；同时避免挂「恒等滤镜」（`blur(0px) brightness(100%)` 会禁用 GPU 合成）。实测 4K 壁纸从 **22–27 fps 提升到 57–60 fps**，每秒长帧从 68–72 降到 3–9。
 - **页签只换视图**：切换「内置壁纸 / 自定义上传 / WE 壁纸库」只改变面板显示，**背景壁纸保持不动**——点选某张壁纸、操作播放队列或开启「同步桌面壁纸」（与 WE 队列互斥）时才真正应用。
 - **同步桌面壁纸**开关：**只读跟随当前桌面壁纸**——桌面换到哪张、页面对上（30 秒轮询，切回 DSH 页签立即跟随），然后按类型正常渲染：场景显示工坊预览图（`preview.gif` / `preview.jpg`）、视频播视频、图片显示图片、网页用 iframe 原生渲染。面板显示**同步状态行**（正在跟随的壁纸标题 / 类型、跟随的显示器与判定依据、上次同步时间）并带「立即刷新」按钮。**多显示器会自动判定跟哪台**（最近换过壁纸的那台 → 正在被读取 / 播放的那台 → `Monitor0` 兜底），状态行里也能**手动指定显示器**。不修改桌面，不采样桌面画面，不产生任何缓存文件。
@@ -91,10 +91,10 @@ dsh plugin --profile web add dsh-wallpaper-bg
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg@latest    # 升到最新发布版
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.9     # 或锁定某个具体版本
+dsh plugin --profile web add dsh-wallpaper-bg@0.5.10     # 或锁定某个具体版本
 ```
 
-> **pnpm 11 只安装「发布满一天」的版本。** pnpm 11 默认开启 24 小时的 `minimumReleaseAge`（供应链保护）：某版本发布后约一天内，`dsh plugin … add dsh-wallpaper-bg` 只会解析到**上一个版本**，并打印 `(0.5.9 is available)`；`@latest` 同样受这个门槛限制。想立刻装上刚发布的版本，可以：写死版本号（`dsh-wallpaper-bg@0.5.9`）、加 `--config.minimumReleaseAge=0`，或在 profile 的 `pnpm-workspace.yaml` 里把本包排除：
+> **pnpm 11 只安装「发布满一天」的版本。** pnpm 11 默认开启 24 小时的 `minimumReleaseAge`（供应链保护）：某版本发布后约一天内，`dsh plugin … add dsh-wallpaper-bg` 只会解析到**上一个版本**，并打印 `(0.5.10 is available)`；`@latest` 同样受这个门槛限制。想立刻装上刚发布的版本，可以：写死版本号（`dsh-wallpaper-bg@0.5.10`）、加 `--config.minimumReleaseAge=0`，或在 profile 的 `pnpm-workspace.yaml` 里把本包排除：
 >
 > ```yaml
 > minimumReleaseAgeExclude:
@@ -186,10 +186,12 @@ WE_WORKSHOP_PATH=D:\Steam\steamapps\workshop\content\431960
 
 ## 常见问题
 
+> 遇到问题先看 **[故障排查手册](docs/troubleshooting.md)**：按「症状 → 原因 → 动作」逐条给出安装加载、界面渲染、WE 壁纸库服务、开发调试等各类情况的解决办法，并单列一张「看着像故障，其实是设计如此」速查表。下面是最高频的几条。
+
 - **桌面端怎么装？** 不用命令行：**设置 → 插件** → 输入包名 `dsh-wallpaper-bg` → 安装 → 按提示重启桌面端。装好后会出现在同一个插件页面里（可停用 / 卸载，也能看插件介绍与来源）。终端等价命令（需先装上桌面端提供的 `dsh` 命令）：`dsh plugin --profile desktop add dsh-wallpaper-bg`。
 - **桌面端为什么 `dsh --profile desktop …` 报错？** 那个 profile 归 Electron 应用独占，终端启动会被拒绝：`profile "desktop" is managed exclusively by the Electron application`。这是设计如此——profile 由应用自己组合并启动。`dsh plugin --profile desktop <pnpm 参数>`（安装 / 列表 / 卸载）仍然可用，因为它只改 profile 的包清单。本包的 `dsh-wallpaper-bg install` 因此也会跳过 `desktop` 并提示走插件页面。
 - **桌面端需要 Node.js 吗？需要 WE 服务吗？** 插件本体不需要——桌面端自带 Node / pnpm 运行时，只有 `dsh web` 命令行方式才要求 Node ≥ 20。可选的「WE 壁纸库」是例外：它的服务是跑在 DSH 之外的独立 Node 进程，所以桌面端也要求 **PATH 里有 Node.js**；此外仍然需要 Windows + 本机 Wallpaper Engine + 8088 端口的 `wallpaper-engine-api` 服务，和 `dsh web` 一致，见[可选组件：WE 壁纸库服务](#可选组件we-壁纸库服务windows)。
-- **装完发现版本比 npm 上的旧？** 是 pnpm 11 默认的 24 小时 `minimumReleaseAge` 门槛，见上文[升级](#升级为什么只跑-add-不会升级)。想立刻装上就写死版本：`dsh plugin --profile web add dsh-wallpaper-bg@0.5.9`。
+- **装完发现版本比 npm 上的旧？** 是 pnpm 11 默认的 24 小时 `minimumReleaseAge` 门槛，见上文[升级](#升级为什么只跑-add-不会升级)。想立刻装上就写死版本：`dsh plugin --profile web add dsh-wallpaper-bg@0.5.10`。
 - **装完了，但 设置 → 壁纸 里没有面板？** 先确认这个 profile 真把它当组合层加载：`profiles/<name>/package.json` 的 `dsh.profile.bundles` 里要有 `dsh-wallpaper-bg`——`dsh-wallpaper-bg status` 也会报这一点（在 bundles 里显示 `installed（bundle 层…）`，只装了依赖、没进 bundles 时会明确提示重跑一次 `add`）。这一项由 DSH 安装时自己回填；版本刚发布不久、注册表还在传播时偶尔会漏写，重跑 `dsh plugin --profile web add dsh-wallpaper-bg@<版本>` 即可补上。另一半检查是 `<DSH 地址>/dsh-wallpaper-bg/health` 返回 JSON。
 - **能装进 `headless` / `tui` / 自建 profile 吗？** 可以，而且无害：插件只在宿主的 `webServer` 服务存在时才注册路由，没有 Web 界面的 profile 会照常启动、插件静默不生效（这个修复之前，这类 profile 会直接以 `1 entry did not activate` 启动失败）。不过装在那种 profile 里没有意义——壁纸界面在浏览器页面里——请装进 `web`，或桌面端的 `desktop` profile。
 - **桌面端怎么确认插件加载了？** 打开 `http://127.0.0.1:19387/dsh-wallpaper-bg/health`，返回 `{"ok":true,"plugin":"dsh-wallpaper-bg","version":"…"}` 即宿主半已挂载（0.2 桌面端固定用 19387 端口跑 `desktop` profile）。界面里也能确认：**设置 → 插件** 里列出 `dsh-wallpaper-bg`（已安装 / 已启用），**设置 → 壁纸** 能打开面板。
