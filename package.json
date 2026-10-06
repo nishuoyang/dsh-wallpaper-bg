@@ -40,6 +40,11 @@
     "desktop",
     "wallpaper",
     "wallpaper-engine",
+    "theme",
+    "themes",
+    "appearance",
+    "background",
+    "ui",
     "cordis",
     "plugin"
   ],

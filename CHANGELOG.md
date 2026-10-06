@@ -4,6 +4,18 @@
 
 > 发版时把下面的 `## [未发布]` 改成 `## [x.y.z] - YYYY-MM-DD`（`scripts/release.ps1` 要求存在对应版本条目）。
 
+## [未发布]
+
+### 文档
+
+- **新增两张橱窗预览图**（`docs/screenshots/preview-hero.jpg`、`docs/screenshots/preview-sources.jpg`）：hero 图取自「浅色外观 + 原生背景模式」实拍，标题与角标压在下缘与右上角、不遮挡界面；来源图把「内置壁纸 / 自定义上传 / WE 壁纸库」三屏并排，带中英说明与一行特性注释。两张都由仓库里已有的真实截图裁切合成，没有虚构界面。
+- **新增 [`screenshots.json`](screenshots.json)**（放在 `package.json` 旁）：声明 8 张截图的展示顺序，供 DSH 插件市场（dsh-market、dsh-plugin.org 等详情页 / 主题 Tab）像 App Store 一样展示。不声明时市场只能从 README 里自动抽取，顺序与取舍都不可控；声明后换图也只需推自己的仓库。
+- README / README.zh.md 顶部预览区把这两张图排在最前。
+
+### 变更
+
+- **插件分类从「工具能力」调整为「界面与外观」**：`package.json` 的 keywords 增加 `theme` / `themes` / `appearance` / `background` / `ui`；仓库 GitHub topics 增加 `theme` / `wallpaper` / `wallpaper-engine` / `appearance` / `background` / `web-ui` / `dsh-theme`。dsh-plugin.org 的分类器优先读 topics，DSH-Store 的分类按 `manifest.keywords` 匹配，两边据此把本插件归入「界面体验 / 主题外观」而不是「工具能力」。
+
 ## [0.5.11] - 2026-10-06
 
 ### 文档

@@ -12,6 +12,10 @@ English | [中文](README.zh.md)
 
 A static two-half plugin that puts an **independent animated wallpaper layer** under the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH) interface — the browser UI (`dsh web`) and the 0.2 **desktop app** alike: install it (one command on the CLI, or just a package name in the desktop app's plugin page), and the whole interface sits on a moving wallpaper. Ships with 10 high-res Unsplash images, supports uploading local images / videos, and can read-only connect to your local Wallpaper Engine library — video and web wallpapers render natively in the browser, while **「同步桌面壁纸」 read-only follows the desktop wallpaper** (whatever the desktop switches to shows up on the page: scenes as their workshop preview `preview.gif`, videos / images / web pages rendered natively — no screen sampling, zero local rendering and zero cache files). In light theme a translucent white fog is layered in automatically, in dark theme a dimming overlay is applied, so fine text stays readable. A **Native background** switch on the main conversation page clears that fog / overlay and the plugin's translucent page surfaces in one click, so the wallpaper shows through completely, while the composer and dialogs keep their readable surfaces. The background layer is fully independent from the desktop Wallpaper Engine: changing wallpapers inside DSH never touches your desktop wallpaper, and vice versa.
 
+![dsh-wallpaper-bg at a glance: the DSH interface sitting on an animated wallpaper, in native background mode](docs/screenshots/preview-hero.jpg)
+
+![Three wallpaper sources: built-in wallpapers, custom uploads, and the local Wallpaper Engine library](docs/screenshots/preview-sources.jpg)
+
 ![DSH interface in dark theme](docs/screenshots/overview-dark.jpg)
 
 ![Native background mode in light theme](docs/screenshots/overview-native-light.jpg)

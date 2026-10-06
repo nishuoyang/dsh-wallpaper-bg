@@ -12,6 +12,10 @@
 
 给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）界面加上一层**独立的动态壁纸背景**的静态双半插件——`dsh web` 网页界面和 0.2 **桌面端**都适用：装好（命令行一条命令；桌面端更是只在插件页面里填个包名）、刷新页面，整个界面的底层就变成一张会动的壁纸。内置 10 张 Unsplash 高清图，支持本地自定义图片 / 视频上传，还能只读接入本机 Wallpaper Engine 壁纸库——视频、网页壁纸在浏览器里原生渲染，**「同步桌面壁纸」则只读跟随当前桌面壁纸**（桌面换一张、页面对上：场景显示 WE 工坊预览图 `preview.gif`，视频 / 图片 / 网页各按原生方式渲染；不采样桌面画面、零本地渲染、零缓存文件）。浅色外观自动铺半透明白雾、深色外观自动压暗遮罩，保证界面细字始终清晰；主页面标题区还提供**「原生背景」开关**，一键清掉雾层 / 遮罩与插件的表面半透明层，让壁纸完整透出，同时保留输入框和弹窗的可读底色。背景层与桌面 Wallpaper Engine 完全独立：在 DSH 里换壁纸不会动你的桌面壁纸，反之亦然。
 
+![一览：DSH 界面坐在会动的壁纸上（原生背景模式）](docs/screenshots/preview-hero.jpg)
+
+![三种壁纸来源：内置壁纸 / 自定义上传 / 本机 Wallpaper Engine 壁纸库](docs/screenshots/preview-sources.jpg)
+
 ![暗色外观下的 DSH 界面](docs/screenshots/overview-dark.jpg)
 
 ![浅色外观下的原生背景界面](docs/screenshots/overview-native-light.jpg)
