@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg 故障排查手册
 
-> 适用版本：插件 **0.5.10**（宿主半 `/dsh-wallpaper-bg/health` 里的 `version`）、可选服务 WE API **0.5.1**（`http://127.0.0.1:8088/health` 里的 `version`）。
+> 适用版本：插件 **0.5.11**（宿主半 `/dsh-wallpaper-bg/health` 里的 `version`）、可选服务 WE API **0.5.1**（`http://127.0.0.1:8088/health` 里的 `version`）。
 > 本文只回答一个问题：**出状况时按什么顺序查、每一步对应什么动作**。功能说明与安装步骤见 [`README.zh.md`](../README.zh.md)（英文版 [`README.md`](../README.md)），逐版变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
 
 插件分两半，出问题时先分清是哪一半：
@@ -19,7 +19,7 @@
 
 | # | 检查 | 怎么做 | 正常应该看到 |
 | --- | --- | --- | --- |
-| 1 | 插件宿主半是否挂上 | 浏览器打开 `http://127.0.0.1:19387/dsh-wallpaper-bg/health`（桌面端固定 19387）；`dsh web` 默认换 **3080** | `{"ok":true,"plugin":"dsh-wallpaper-bg","version":"0.5.10","monitorForward":1}` |
+| 1 | 插件宿主半是否挂上 | 浏览器打开 `http://127.0.0.1:19387/dsh-wallpaper-bg/health`（桌面端固定 19387）；`dsh web` 默认换 **3080** | `{"ok":true,"plugin":"dsh-wallpaper-bg","version":"0.5.11","monitorForward":1}` |
 | 2 | WE API 服务是否在跑（只影响 WE 壁纸库） | `http://127.0.0.1:8088/health` | `{"ok":true,"service":"we-api-proxy","version":"0.5.1","webShim":1,"monitorSelect":1,…}` |
 | 3 | profile 是否真把它当组合层加载 | 仓库里 `node .\bin\dsh-wallpaper-bg.js status`（或用 `npx dsh-wallpaper-bg status`） | 出现 `installed（bundle 层，随 DSH 启动加载）` |
 
@@ -92,8 +92,8 @@ DSH 只在把插件记进 profile 的 **组合层列表** 时才加载它；依�
 2. 重跑一次安装命令把列表补上（**带上版本号**，否则可能装到旧版，见 [§2.3](#23-版本比-npm-上的旧--重复-add-不升级)）：
 
    ```bash
-   dsh plugin --profile web add dsh-wallpaper-bg@0.5.10     # 网页版 / 命令行
-   dsh plugin --profile desktop add dsh-wallpaper-bg@0.5.10 # 桌面端（等价于插件页面里重装）
+   dsh plugin --profile web add dsh-wallpaper-bg@0.5.11     # 网页版 / 命令行
+   dsh plugin --profile desktop add dsh-wallpaper-bg@0.5.11 # 桌面端（等价于插件页面里重装）
    ```
 
    也可以直接检查 `%DSH_HOME%\profiles\<profile>\package.json`（`DSH_HOME` 默认 `C:\Users\<你>\.dsh`）里 `dsh.profile.bundles` 数组是否含 `dsh-wallpaper-bg`。
@@ -125,8 +125,8 @@ dsh plugin --profile <profile> remove dsh-wallpaper-bg
 
 | 现象 | 原因 | 解决 |
 | --- | --- | --- |
-| 重复跑 `dsh plugin … add dsh-wallpaper-bg` 版本纹丝不动 | `add` 转发给 `pnpm add`，pnpm 保留清单里已有的版本范围（停在 `^0.4.1` 就永远是 0.4.x） | 显式写版本或 `@latest`：`… add dsh-wallpaper-bg@latest` / `… add dsh-wallpaper-bg@0.5.10` |
-| `@latest` 也装到上一个版本，命令还提示 `(0.5.10 is available)` | pnpm 11 默认 24 小时 `minimumReleaseAge`（供应链保护）：发布未满一天的版本会被跳过 | 三选一：写死版本号；加 `--config.minimumReleaseAge=0`；在 profile 的 `pnpm-workspace.yaml` 里写 `minimumReleaseAgeExclude: [dsh-wallpaper-bg]` |
+| 重复跑 `dsh plugin … add dsh-wallpaper-bg` 版本纹丝不动 | `add` 转发给 `pnpm add`，pnpm 保留清单里已有的版本范围（停在 `^0.4.1` 就永远是 0.4.x） | 显式写版本或 `@latest`：`… add dsh-wallpaper-bg@latest` / `… add dsh-wallpaper-bg@0.5.11` |
+| `@latest` 也装到上一个版本，命令还提示 `(0.5.11 is available)` | pnpm 11 默认 24 小时 `minimumReleaseAge`（供应链保护）：发布未满一天的版本会被跳过 | 三选一：写死版本号；加 `--config.minimumReleaseAge=0`；在 profile 的 `pnpm-workspace.yaml` 里写 `minimumReleaseAgeExclude: [dsh-wallpaper-bg]` |
 
 桌面端的「设置 → 插件」页面走的是同一个 pnpm，所以刚发布的版本同样要等约一天才会出现在那里。
 

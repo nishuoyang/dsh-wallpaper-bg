@@ -4,6 +4,14 @@
 
 > 发版时把下面的 `## [未发布]` 改成 `## [x.y.z] - YYYY-MM-DD`（`scripts/release.ps1` 要求存在对应版本条目）。
 
+## [0.5.11] - 2026-10-06
+
+### 文档
+
+- **README / README.zh.md 顶部徽章行加上社区插件目录的收录徽章**（[![Listed on dsh-plugin.org](https://dsh-plugin.org/badges/listed.svg)](https://dsh-plugin.org/plugins/nishuoyang/dsh-wallpaper-bg)）：本插件已被 [DSH Plugin Hub](https://dsh-plugin.org/plugins/nishuoyang/dsh-wallpaper-bg)（dsh-plugin.org 的社区插件市场）收录并标记为 **Verified**（收录于 2026-08-27），徽章指向该条目页。徽章图片 `https://dsh-plugin.org/badges/listed.svg` 实测返回 200（132×20 的 SVG）。
+- `docs/troubleshooting.md` 里的**当前版本号**同步到 0.5.11：「适用版本」行、第 1 条自查的 health 示例，以及升级 / 锁版本示例；0.5.9 / 0.5.10 这类**历史版本引用保持不变**。
+- npm 上的 README 只随发布更新，所以这次以 **0.5.11** 重新发布一遍（纯文档）：`lib/host.js` / `lib/client.js` 的逻辑与 0.5.10 完全一致，插件行为无任何变化；两个文件里只有版本号字符串随之更新。
+
 ## [0.5.10] - 2026-10-04
 
 ### 修复
