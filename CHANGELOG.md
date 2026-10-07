@@ -14,6 +14,7 @@
 
 ### 变更
 
+- **插件列表图标**：新增包根 `icon.svg`，并在 `package.json` 声明 `"icon": "./icon.svg"`（同时加进 `files` 随包发布）。DSH 的「设置 → 插件」列表里，卡片图标取自包清单的 `icon` 字段 —— 该文件由 Host 的 package-meta 读取器取用（参见 `dsh-context` 客户端源码注释与 `dsh-better-sidebar` / `@linxin666/*` 等同类插件的做法）。此前本包既没有 `icon` 字段也没有图标文件，列表里显示的是壳子的兜底字形；现在换成自己的图标：蓝紫双层的「壁纸卡片」（前层远景山头 + 太阳，后层暗示多来源 / 可叠加的壁纸层）。图形在 24–32px 下有辨识度，深浅色界面都成立。
 - **插件分类从「工具能力」调整为「界面与外观」**：`package.json` 的 keywords 增加 `theme` / `themes` / `appearance` / `background` / `ui`；仓库 GitHub topics 增加 `theme` / `wallpaper` / `wallpaper-engine` / `appearance` / `background` / `web-ui` / `dsh-theme`。dsh-plugin.org 的分类器优先读 topics，DSH-Store 的分类按 `manifest.keywords` 匹配，两边据此把本插件归入「界面体验 / 主题外观」而不是「工具能力」。
 
 ## [0.5.11] - 2026-10-06
