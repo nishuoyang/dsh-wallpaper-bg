@@ -4,6 +4,42 @@
 
 > 发版时把下面的 `## [未发布]` 改成 `## [x.y.z] - YYYY-MM-DD`（`scripts/release.ps1` 要求存在对应版本条目）。
 
+## [0.6.1] - 2026-10-12
+
+### 新增
+
+- **主页面「场景」快捷开关**（与标题栏「原生背景」开关并列，空白首页与会话页都可见）：一键切场景壁纸的实时渲染 / 工坊预览图，不用进设置面板。和设置面板里那个复选框是同一个 `state.sceneLive`，两边自动同步；当前这张渲染失败时，开关的 tooltip 会如实带上回退原因。**实现注意**：`conversation.header.leading` 在 DSH 源码里是 `kind:"single"`（只渲染第一个 entry），两个开关必须在同一次 `slots.register` 里一起返回——另起一次注册会被 single 语义悄悄忽略且不报错。
+- **场景渲染质量档位**（设置 → 壁纸，「场景帧率上限」下方新增「渲染质量」：高 / 中 / 低 · 省显存，默认高）。0.6.0 的场景实时渲染一直跑在 webwallgl 的全默认档（renderDpr 跟随设备 + 粒子/后处理 high），而按上游文档（`vendor/webwallgl/UPSTREAM-README.md`「显存与清晰度」），**4K 屏上画布与效果链 FBO 才是显存大头（随 DPR² 增长，MSAA4 再 ×4），纹理反而是其次**，低内存设备的推荐组合是「清晰度 0.8 + 质量 low」。新档位把这两个一直没接的旋钮接进面板：
+  - **高**（默认）：与 0.6.0 完全一致 —— renderDpr 跟随设备、粒子/后处理 high，`autoQuality` 的自动降档逻辑不变（显式传 high 反而会关掉它，所以 high 档一个键都不传）；
+  - **中**：renderDpr 0.85 + 粒子/后处理 medium，显存约打七折、观感几乎无损；
+  - **低**：renderDpr 0.7 + 粒子/后处理 low，显存约打四折、画面明显变柔。
+  `renderDpr` 同时决定画布分辨率与贴图资源倍率（档位越低，贴图按图层屏幕足迹选得越小）。显式档位 `autoQuality` 不覆盖（它只填没显式指定的键）—— 选了低就不会被帧率逻辑悄悄升回去。切档重挂载当前场景（渲染器 pkg 缓存命中，不重新下载 scene.pkg），叠化切换不闪黑；当前档位会显示在「同步桌面壁纸」状态行里。
+
+### 变更
+
+- **场景切换硬释放 WebGL 上下文**（`lib/client.js`）：渲染器 `dispose()` 之外，图层移除时对其中所有 canvas 再显式调一次 `WEBGL_lose_context.loseContext()` 并清引用。0.6.0 依赖渲染器内部释放 + GC，而 [docs/scene-coverage.md](docs/scene-coverage.md) 坑 2 实测：快速连续挂载时「释放跟不上创建」（连挂多张后半段每张报 `WEBGL2_UNAVAILABLE`、会话内上下文/显存累积拖慢后续每一张）—— 现在切走即释放，不等 GC。迟到实例（看门狗判负后 mount 才 resolve）同样硬释放。
+- **视频缩略图不再整文件缓冲**（`lib/client.js`）：生成首帧缩略图的离屏 `<video>` 从 `preload=auto` 改为 `preload=metadata` + 主动 seek 到片头附近（元数据就绪 → seek → `seeked` 才画帧），浏览器按需只拉那一小段。上传库里 51.7MB 的 mp4 以前为一张 320px 缩略图会把整个文件缓冲进媒体缓存（本地 blob 同样走媒体缓存）；另加 10 秒兜底定时器 —— 元数据/seek 都不来时也不会把缩略图生成队列卡死（并发位靠 promise resolve 释放）。
+- **窗口失焦暂停场景渲染**（`lib/client.js`）：`visibilitychange` 之外补 `window` blur/focus —— 桌面端 DSH 不是当前窗口时壁纸根本看不见，白烧 GPU 没有意义；恢复需「重新获焦且页签可见」两个条件，避免后台页签误启。与既有「页签不可见暂停」共用同一套 pause/resume。
+- 播放队列条的缩略图补 `loading="lazy"`（WE 壁纸库网格此前已随 `tile()` 带上）。
+
+## [0.6.0] - 2026-10-11
+
+### 新增
+
+- **场景类壁纸真正动起来：页面内 WebGL2 实时渲染 `scene.pkg`**（设置 → 壁纸新增「场景实时渲染」开关，默认开；旁边是「场景帧率上限」10–60fps，默认 30）。场景壁纸不再只是工坊预览图 —— 对象树 / puppet 骨骼 / 粒子 / 内置效果链 / 场景脚本（文字、音频响应）都在页面里由 GPU 实时绘制，不依赖 Wallpaper Engine 正在运行。
+  - **渲染器**：内置 [webwallgl](https://github.com/oneincase/webwallgl) 2.1.0（MIT，`vendor/webwallgl/webwallgl.min.mjs`，sha256 见同目录 README）。宿主半新增 `GET /dsh-wallpaper-bg/vendor/webwallgl.min.mjs` 按白名单文件名同源提供（白名单外一律 `404`，路径固定在本包 `vendor/webwallgl/` 下），客户端用动态 `import()` 加载。
+  - **资源**：复用 WE API 服务已有的只读 `/files/<id>/…` 路由（`project.json` + `scene.pkg` + 散装资源），无需改服务端契约、无需新增端点。实测：`project.json` → `200 application/json`，`scene.pkg` → `206`（Range，11.8MB），未订阅 id → `403`。
+  - **实测性能**（本机 RTX 4060 Laptop + Radeon 780M，Chrome / ANGLE-D3D11）：当前桌面壁纸 `3797976859`「小作 2(有声)」（11.8MB `scene.pkg`）首帧 **1.27s**、稳定 **60.2fps**；场景自带的文字对象（`SUNDAY` / `11 OCT 2026` / 实时时钟）随脚本逐帧更新，可证明渲染管线是活的而不只是一张图。
+  - **全库覆盖实测**：本机工坊里 **100 张** `type=scene` 壁纸**全部渲染成功（100%，0 失败）**；首帧 p50 1.0s / p90 3.5s / max 7.3s；帧率（30fps 上限、顺序连测的保守下界）p50 28.2fps、52 张顶到上限，连测中偏低的 17 张单独复测 p50 回到 **55.6fps**，只有 4 张确实重（16.7–28.2fps，交给 `autoQuality` 降档）。方法与三个测量坑（含「同一会话连挂多张会撞 Chrome 的 WebGL 上下文上限，曾得出 62% 的假结论」）见 [docs/scene-coverage.md](docs/scene-coverage.md)。
+  - **失败一定收场**：首帧 **20 秒看门狗**；渲染失败、宿主半是旧版（`/health` 无 `sceneLive`）、或用户关掉开关 → 立刻回退工坊预览图（`preview.gif` / `preview.jpg`），背景不会空；回退原因在设置面板与「同步桌面壁纸」状态行里如实展示。
+  - **资源管理**：图层被换掉 / 清理时 `dispose()` 释放 GPU 资源；页签不可见时 `pause()`、切回 `resume()`；`autoQuality` 在软渲染或持续掉帧时自动降档。
+  - **架构说明**：本条取代 0.4.0–0.5.x 的「场景一律显示工坊预览图」。0.3.x 那套服务端 CPU 渲染器（实测 p50 9.3s/帧）与 0.4.x 的桌面画面捕获（镜像）都**没有**回归 —— 前者做不了实时，后者经实测彻底否决（见下条）。仍然是零服务端渲染、零磁盘缓存：像素由浏览器里的 GPU 画。
+- **「镜像桌面」路线实测否决记录**（避免以后再走一遍）：WE 的场景由 `wallpaper32.exe` 的 `WPEDesktopDX11Window`（`Progman` 子窗口，D3D11 swapchain）渲染。实测 ① `BitBlt(CAPTUREBLT)` / `PrintWindow` 抓该子窗口 → **全黑**；② `PrintWindow(Progman, PW_RENDERFULLCONTENT)` → 有画面但**冻结**（相隔 2 秒两帧逐像素完全相同）且带满桌图标；③ Windows.Graphics.Capture 对该子窗口 `CreateForWindow` → `ArgumentException`（系统不接受子窗口），对 `Progman` → 4 秒只出 **1 帧**（被遮挡时 DWM 不再合成）。结论：0.4.x 记录的「~100ms/帧」不是慢，是**根本没有新帧**。
+
+- **「清任务面板玻璃」开关**（设置 → 壁纸，默认关）：把 DSH 的菜单材质清成透明 —— 「任务」那一栏（`conversation.input.dock`）、工具卡片、分析卡片、菜单与任务浮层垫的都是 `--dsw-specific-menu`（深色下 = `--dsw-menu-surface-fill` = `#43454a73`，深色底仅 45% 不透明）再叠 `--dsw-menu-backdrop-filter` = `blur(40px) saturate(150%)`；叠在「壁纸 × 深色遮罩」之上会压成一片约 44 亮度的暗面，表现为「带任务栏的会话看着更黑」。此前插件的表面覆盖只改了 `--dsw-alias-bg-base` / `bg-layer-*`，管不到这条材质，所以原生背景开关对这个现象无效。开关只挂 `body[data-dshw-clear-panel]`，由插件自己的 `<style>` 清 `--dsw-specific-menu`、`--dsw-menu-surface-fill`、`--dsw-alias-menu-group-header-fill` 并把 `--dsw-menu-backdrop-filter` 置 `none`（`body` 前缀 + `!important`，晚于 DSH 主题样式生效）。默认关：这些面板浮在内容之上，清得太干净会降低细字可读性。与本插件既有的 `theme.overrideTokens` 表面覆盖相互独立，互不干扰。
+
+- **「统一任务底色」开关**（设置 → 壁纸，默认关，与上面的开关相邻）：反过来用同一套材质 —— 不改任何面板，而是在壁纸之上、所有界面之下新增第三层背景（`#dsh-wallpaper-task-tint`，仍是 `position:fixed; z-index:-1`，按 DOM 顺序画在壁纸与遮罩之上），铺 `rgba(67,69,74,0.45)` + `backdrop-filter: blur(40px) saturate(150%)`，也就是 DSH 菜单材质在深色主题下的那组值。于是**所有会话**（不管有没有任务在跑）都是同一种偏暗的观感，截图与实机不再出现「看着不一样、截图一样」的偏差。颜色与模糊集中在 `lib/client.js` 顶部的 `TASK_TINT_RGBA` / `TASK_TINT_BLUR` 两个常量，想更淡/更浓只改一处。它只作用于背景，不碰任何前景文字的对比度，因此与「清任务面板玻璃」并不冲突（两个都勾 = 背景统一偏暗、各面板自身透明）。代价：整屏 `backdrop-filter` 比之前的纯色遮罩更吃 GPU，4K + 视频壁纸若掉帧就把 `TASK_TINT_BLUR` 置空字符串（只留底色）。
+
 ## [0.5.12] - 2026-10-07
 
 ### 文档

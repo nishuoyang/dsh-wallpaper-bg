@@ -9,3 +9,7 @@ we-api.config
 app-extract/
 tools/
 asar-filelist.txt
+# 本地排查用的截图与采样脚本（不是交付物）
+.tmp-shots/
+# 场景渲染 PoC（本地验证用：静态服务 + CDP 驱动 + 冒烟测试）
+.tmp-scene-poc/
