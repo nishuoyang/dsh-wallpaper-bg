@@ -27,7 +27,6 @@
     "lib/host.js",
     "lib/client.js",
     "bin/dsh-wallpaper-bg.js",
-    "vendor/webwallgl",
     "cordis.patch.yml",
     "icon.svg",
     "README.md",
@@ -35,8 +34,7 @@
     "LICENSE",
     "CHANGELOG.md",
     "docs/screenshots",
-    "docs/troubleshooting.md",
-    "docs/scene-coverage.md"
+    "docs/troubleshooting.md"
   ],
   "keywords": [
     "deepseek-harness",
