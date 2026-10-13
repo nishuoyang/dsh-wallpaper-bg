@@ -9,3 +9,6 @@ we-api.config
 app-extract/
 tools/
 asar-filelist.txt
+# 本地临时工作区（性能测试床 / PoC / 截图草稿）与 agent 会话记忆
+.tmp-*/
+.workbuddy/

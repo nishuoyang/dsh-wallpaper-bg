@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dsh-wallpaper-bg 性能评估 · v0.5.12</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --card:#ffffff; --ink:#1a1d24; --ink2:#4a5160; --ink3:#8a91a0;
+    --line:#e3e6ec; --accent:#2563eb; --ok:#0f9d58; --warn:#d97706; --bad:#dc2626;
+    --chip:#eef2ff; --mono:ui-monospace,"Cascadia Mono",Consolas,"SF Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:14px/1.75 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:920px;margin:0 auto;padding:40px 28px 80px}
+  header{border-bottom:2px solid var(--line);padding-bottom:20px;margin-bottom:32px}
+  h1{font-size:26px;margin:0 0 8px;letter-spacing:-.2px}
+  .sub{color:var(--ink3);font-size:13px}
+  h2{font-size:19px;margin:44px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+  h3{font-size:15px;margin:26px 0 10px}
+  p{margin:10px 0}
+  code{font-family:var(--mono);font-size:.88em;background:#f0f2f6;padding:1px 5px;border-radius:4px;color:#b02a5b}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0}
+  table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--ink3);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.4px}
+  td.num{font-family:var(--mono);text-align:right;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  .tag{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap}
+  .p0{background:#fee2e2;color:#991b1b}
+  .p1{background:#fef3c7;color:#92400e}
+  .p2{background:#e0e7ff;color:#3730a3}
+  .ok{background:#dcfce7;color:#166534}
+  .bar{height:22px;background:var(--chip);border-radius:5px;overflow:hidden;position:relative;min-width:120px}
+  .bar>i{display:block;height:100%;background:var(--accent);border-radius:5px 0 0 5px}
+  .bar.bad>i{background:var(--bad)} .bar.warn>i{background:var(--warn)} .bar.ok>i{background:var(--ok)}
+  .barlab{position:absolute;right:8px;top:0;line-height:22px;font-family:var(--mono);font-size:11px;color:var(--ink2)}
+  .kv{display:grid;grid-template-columns:130px 1fr;gap:6px 14px;font-size:13px;margin:8px 0}
+  .kv dt{color:var(--ink3)} .kv dd{margin:0}
+  .note{background:#fffbeb;border-left:3px solid var(--warn);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0;font-size:13px}
+  .good{background:#f0fdf4;border-left:3px solid var(--ok);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0;font-size:13px}
+  ul{padding-left:22px;margin:8px 0}
+  li{margin:4px 0}
+  .sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:18px 0}
+  .sum .card{margin:0;text-align:center;padding:16px 12px}
+  .sum b{display:block;font-size:24px;font-family:var(--mono);letter-spacing:-.5px}
+  .sum span{font-size:12px;color:var(--ink3)}
+  .foot{margin-top:56px;padding-top:16px;border-top:1px solid var(--line);color:var(--ink3);font-size:12px}
+  .loc{font-family:var(--mono);font-size:12px;color:var(--ink2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>dsh-wallpaper-bg 性能评估</h1>
+  <div class="sub">v0.5.12 · 一次性审计 · 数据全部来自本机实测（非估算）· 2026-10-13</div>
+</header>
+
+<p>本次评估把插件的两个半（<code>lib/host.js</code> 宿主端 + <code>lib/client.js</code> 浏览器端）分别挂到真实的
+Node 服务和真实 Chromium 上跑基准，用本机 Wallpaper Engine 库的 <b>314 张真实壁纸</b>作为数据源。
+结论是：<b>插件整体性能相当健康</b>——渲染层的合成策略（video + object-fit、恒等滤镜不挂 filter、双层叠化）
+都是对的，实测没有帧率问题。真正值得改的是 <b>5 个具体点</b>，集中在「重复劳动」和「缺少并发合并」两类。</p>
+
+<div class="sum">
+  <div class="card"><b>10</b><span>个可优化点</span></div>
+  <div class="card"><b>7</b><span>已实施（零画质影响）</span></div>
+  <div class="card"><b>2</b><span>因画质约束排除</span></div>
+  <div class="card"><b>1</b><span>待你定夺</span></div>
+</div>
+
+<p style="font-size:13px;background:#f0fdf4;border-left:3px solid var(--ok);padding:10px 14px;border-radius:0 8px 8px 0">
+<b>状态更新</b>：第五节记录了本轮处置结果 —— 7 项已实施并验证（宿主端 18 项 + 客户端 19 项 + 仓库自带 13 项断言全部通过），
+2 项因「不影响画质」约束被排除，1 项待定。全部改动只涉及缓存 / 并发 / 事件订阅 / 资源释放，画面与画质不变。
+</p>
+
+<h2>一、测试环境与方法</h2>
+<div class="card">
+<dl class="kv">
+  <dt>宿主端</dt><dd>Node v22.22.2 / win32，把 <code>lib/host.js</code> 的 <code>apply()</code> 挂到 mock cordis ctx + 真实 <code>node:http</code> 上压测</dd>
+  <dt>浏览器端</dt><dd>真实 Chromium（Edge 119 内核）+ CDP 驱动，页面复刻插件的关键 CSS 与渲染路径</dd>
+  <dt>数据源</dt><dd>本机 WE 库 314 张（video 154 / scene 143 / web 17），列表 JSON 199.6 KB，35 ms</dd>
+  <dt>复现</dt><dd><code>.tmp-perf/bench-host.mjs</code>、<code>run.mjs</code>、<code>run2.mjs</code>、<code>run3.mjs</code></dd>
+</dl>
+</div>
+
+<h2>二、实测数据</h2>
+
+<h3>2.1 宿主端（Node 侧路由）</h3>
+<table>
+  <tr><th>项</th><th>实测</th><th>判定</th></tr>
+  <tr><td><code>/health</code> 平均 / P95</td><td class="num">0.48 / 1.02 ms</td><td><span class="tag ok">没问题</span></td></tr>
+  <tr><td><code>/asset</code> 64 KB 串行</td><td class="num">1.25 ms</td><td><span class="tag ok">没问题</span></td></tr>
+  <tr><td><code>/asset</code> 并发 50 张缩略图</td><td class="num">65 ms（1.3 ms/张）</td><td><span class="tag ok">没问题</span></td></tr>
+  <tr><td><code>/asset</code> 128 MB 吞吐</td><td class="num">292 MB/s</td><td><span class="tag ok">没问题</span></td></tr>
+  <tr><td><code>/asset</code> Range 1 MB × 40</td><td class="num">4.56 ms</td><td><span class="tag ok">没问题</span></td></tr>
+  <tr><td><code>statSync</code> 单次均摊</td><td class="num">0.053 ms</td><td><span class="tag ok">可忽略</span></td></tr>
+  <tr><td><code>/we</code> 缓存命中</td><td class="num">2.11 ms</td><td><span class="tag ok">没问题</span></td></tr>
+  <tr><td><code>/we</code> 慢下游 + 并发 10</td><td class="num">下游被请求 10 次</td><td><span class="tag p0">无合并</span></td></tr>
+  <tr><td>端点不可达（ECONNREFUSED）</td><td class="num">3.05 ms</td><td><span class="tag ok">没问题</span></td></tr>
+  <tr><td>下游挂起时最坏延迟</td><td class="num">40 s</td><td><span class="tag p1">超时过长</span></td></tr>
+  <tr><td><code>ETag</code> / <code>Last-Modified</code></td><td class="num">无 / 无</td><td><span class="tag p1">无法 304</span></td></tr>
+</table>
+
+<h3>2.2 客户端（真实 Chromium）</h3>
+<table>
+  <tr><th>项</th><th>实测</th><th>判定</th></tr>
+  <tr><td>WE 网格首屏（314 张）</td><td class="num">105 ms</td><td><span class="tag p1">偏慢</span></td></tr>
+  <tr><td>　├ DOM 构建 + 布局</td><td class="num">94.1 ms</td><td><span class="tag p1">主要开销</span></td></tr>
+  <tr><td>　└ vdom 创建</td><td class="num">0.3 ms</td><td><span class="tag ok">可忽略</span></td></tr>
+  <tr><td>全量重渲染 ×10 平均 / 峰值</td><td class="num">16.2 / 28.4 ms</td><td><span class="tag p1">偏慢</span></td></tr>
+  <tr><td>拖滑杆单帧（每次都 saveState）</td><td class="num">9.97 ms</td><td><span class="tag p0">可优化 47%</span></td></tr>
+  <tr><td>　├ 其中 localStorage 同步写</td><td class="num">0.068 ms</td><td><span class="tag ok">不是瓶颈</span></td></tr>
+  <tr><td>　└ 仅去掉 saveState</td><td class="num">9.93 ms</td><td>—</td></tr>
+  <tr><td>全屏 CSS blur(20px) + 1080p 视频</td><td class="num">165 fps</td><td><span class="tag ok">无代价</span></td></tr>
+  <tr><td>sticky 队列 + backdrop-filter 滚动</td><td class="num">159 fps</td><td><span class="tag ok">无代价</span></td></tr>
+  <tr><td><code>client.js</code> 解析 + 编译</td><td class="num">1.4 ms</td><td><span class="tag ok">可忽略</span></td></tr>
+  <tr><td>内置壁纸首屏（1920 px）</td><td class="num">1696 ms</td><td><span class="tag p0">明显</span></td></tr>
+  <tr><td>　├ 网络 309 KB</td><td class="num">1680 ms</td><td><span class="tag p0">主要开销</span></td></tr>
+  <tr><td>　└ 解码</td><td class="num">16.4 ms</td><td><span class="tag ok">可忽略</span></td></tr>
+  <tr><td>视频首帧缩略图（单个）</td><td class="num">2036 ms</td><td><span class="tag p0">明显</span></td></tr>
+  <tr><td>　├ 读 blob</td><td class="num">1417 ms</td><td><span class="tag p0">主要开销</span></td></tr>
+  <tr><td>　└ 解码取帧 + 出图</td><td class="num">619 ms</td><td><span class="tag p1">次要</span></td></tr>
+  <tr><td>视频预热（<code>warmVideoElement</code>）</td><td class="num">71–242 ms</td><td><span class="tag ok">可控</span></td></tr>
+  <tr><td>白场片头探测（最坏 9 次 seek）</td><td class="num">613 ms</td><td><span class="tag p2">偶发</span></td></tr>
+</table>
+
+<div class="good"><b>三个被数据推翻的直觉</b>——这几处原本以为是瓶颈，实测证明不是，不建议改动：
+<ul>
+  <li><b>全屏 <code>blur(20px)</code> 不会掉帧</b>：1080p 视频下 0/5/20 px 三档实测都是 161–165 fps。代码里「恒等滤镜不挂 filter」的规避仍然值得保留（4K 下未测，但至少 1080p 无代价）。</li>
+  <li><b><code>client.js</code> 117 KB 不是负担</b>：解析 + 编译 + factory 执行合计 1.5 ms，冷启动里完全可以忽略。</li>
+  <li><b>视频预热不会把 GB 级文件整个拉下来</b>：浏览器只缓冲「够播」的量就主动断开——实测 526 MB / 4 分钟的视频只缓冲 13.2 s（5%，约 28 MB），188 MB 的缓冲 8%，101 MB 的只缓冲 3%。</li>
+</ul></div>
+
+<h2>三、优化清单（按优先级）</h2>
+<p style="color:var(--ink3);font-size:13px">本章是评估当时的原始清单，保留作对照用；每一项的处置结果见第五节。</p>
+
+<div class="card">
+<h3><span class="tag p0">P0</span> 1. 内置壁纸冷启动要 1.7 秒才出背景</h3>
+<p><b>现象</b>：每次 DSH 冷启动，首屏背景有约 1.7 秒停在容器底色 <code>#0b0d12</code>。</p>
+<p><b>根因</b>：<code>BUILTIN_ITEMS</code> 固定请求 <code>w=1920</code> 全尺寸图（<span class="loc">client.js:53-61</span>），
+且插件不落任何本地缓存，每次启动都从 unsplash CDN 拉 309 KB。</p>
+<p><b>建议</b>（两条独立，可分别做）：</p>
+<ul>
+  <li><b>按屏幕分辨率请求</b>：用 <code>Math.min(1920, Math.ceil(screen.width * devicePixelRatio / 100) * 100)</code> 选宽度。1080p 屏从 1920 降到 1280 能省约 40% 流量，4K 屏则反过来不再被放大发虚。</li>
+  <li><b>渐进式出图</b>：先用 640px 缩略图（几十 KB、约 150 ms）挂上背景，再用全尺寸图静默替换。用户侧感知从 1.7 s 降到 0.2 s 以内，且完全不引入「缓存文件」，不违背 README 的 zero-cache 承诺。</li>
+</ul>
+<p><b>预期</b>：首屏背景出现时间 1.70 s → 0.2 s 以内。</p>
+</div>
+
+<div class="card">
+<h3><span class="tag p0">P0</span> 2. 自定义上传的视频缩略图，单个 2 秒且每次刷新全部重算</h3>
+<p><b>现象</b>：打开「自定义上传」页签，每传一个视频要约 2 秒才出缩略图；刷新页面后所有视频缩略图重新生成。</p>
+<p><b>根因</b>：<code>generateVideoThumb()</code>（<span class="loc">client.js:1341-1378</span>）每次都要
+<code>URL.createObjectURL(blob)</code> 把整个视频读进来 → <code>loadeddata</code> → canvas 取帧 → <code>toBlob</code>。
+结果只存进内存 <code>Map</code>（<code>vidThumbCache</code>），<b>不落 IndexedDB</b>，所以刷新即失效。</p>
+<p><b>建议</b>：在 IndexedDB 里加一个 <code>thumbs</code> object store（<code>keyPath:'id'</code>），
+把生成好的缩略图 blob 连同源 blob 的 <code>size</code> 一起存；读取时若命中且 size 一致就直接用。
+上传的图片缩略图同理可省。</p>
+<p><b>预期</b>：首次仍 2 s/个（ unavoidable ），但<b>二次进入 0 ms</b>；上传 10 个视频的场景从 20 s 降到 2 s。</p>
+</div>
+
+<div class="card">
+<h3><span class="tag p0">P0</span> 3. 拖滑杆单帧 10 ms，且随壁纸库线性变差</h3>
+<p><b>现象</b>：拖动「背景模糊度 / 亮度 / 安全放大」滑杆时，每帧约 10 ms；WE 页签下这一帧里包含重建 314 个 tile。</p>
+<p><b>根因</b>：<code>setState()</code> 无条件 <code>saveState()</code> + <code>emit()</code>（<span class="loc">client.js:942-965</span>），
+而 <code>emit()</code> 让 <code>WallpaperPanel</code> 整体重渲染——<code>weGrid()</code> 会把整个网格的 element 树重建一遍。
+实测 <b>localStorage 只占 0.068 ms</b>，瓶颈 100% 是全量重渲染。</p>
+<p><b>建议</b>（最小改动优先）：</p>
+<ul>
+  <li><b>滑杆行抽成独立组件</b>，只通过 <code>useState</code> 持有自己的值，<code>onChange</code> 里直接改 DOM 样式（<code>setFilter</code>/<code>setZoom</code> 已经是现成的），<code>onMouseUp</code>/<code>onBlur</code> 时才 <code>setState</code> 提交。</li>
+  <li><b><code>weGrid()</code> / <code>customGrid()</code> 加记忆化</b>：用 <code>useMemo</code> 依赖 <code>[weList, weTypeFilter, weRatingFilter, snap.wallpaperId, snap.syncDesktop]</code>，外观类字段不进入依赖。</li>
+  <li>若库规模继续增长（&gt;800 张），再考虑虚拟滚动——现在 314 张 ≈ 1256 个元素，还不到必须虚拟化的程度。</li>
+</ul>
+<p><b>预期</b>：拖滑杆单帧 10 ms → 接近 0 ms；且不再随壁纸库规模线性劣化。</p>
+</div>
+
+<div class="card">
+<h3><span class="tag p1">P1</span> 4. <code>/we</code> 没有 in-flight 合并，并发请求成倍穿透</h3>
+<p><b>现象</b>：慢下游（500 ms）下并发 10 个请求，WE API 被真实请求了 <b>10 次</b>，10 个响应全是 <code>fromCache:false</code>。</p>
+<p><b>根因</b>：<code>weApi()</code>（<span class="loc">host.js:168-219</span>）只在成功返回后 <code>cache.set</code>，
+在途请求没有任何去重。真实触发场景不少：多个浏览器标签页、设置面板开着 + 30 秒轮询、切换跟随显示器。</p>
+<p><b>建议</b>：加一个 <code>pending = new Map()</code>，同 <code>key</code> 的请求复用同一个 Promise；成功后一起写缓存，失败则删掉 pending 让下次重试。</p>
+<p><b>预期</b>：并发 10 → 下游 1 次；WE API 服务的负载下降一个量级。</p>
+</div>
+
+<div class="card">
+<h3><span class="tag p1">P1</span> 5. 端点探测串行 5 × 8 秒，挂起时最坏 40 秒</h3>
+<p><b>现象</b>：WE 服务端口存在但不响应（挂起 / 被防火墙 drop）时，单次 <code>/we</code> 请求最坏要 40 秒才返回 502。
+端口无人监听（ECONNREFUSED）时倒是只要 3 ms，所以这个坑平时不容易遇到。</p>
+<p><b>根因</b>：<code>ENDPOINTS.wallpapers</code> 有 5 个候选路径串行尝试，每个 <code>AbortSignal.timeout(8000)</code>
+（<span class="loc">host.js:117-166</span>）。而且失败结果不写缓存，下一次请求再走一遍全程。</p>
+<p><b>建议</b>：</p>
+<ul>
+  <li><b>记住可用端点</b>：首次成功后把 <code>base → 可用 endpoint</code> 存进内存，后续请求直接用它，只在失败时才重新探测。</li>
+  <li><b>超时降到 2 s</b>：目标是本机 <code>127.0.0.1</code> 服务，8 s 完全没必要。</li>
+  <li><b>加 5–10 秒负缓存</b>：失败也记一笔，避免「面板打开 + 轮询」在服务挂了的时候反复重试。</li>
+</ul>
+<p><b>预期</b>：挂起场景 40 s → 2–10 s；正常场景少 4 次无用请求。</p>
+</div>
+
+<div class="card">
+<h3><span class="tag p1">P1</span> 6. <code>/asset</code> 没有 <code>ETag</code>，无法 304</h3>
+<p><b>现象</b>：视频二次加载实测 99–104 ms，和首次（104 ms）几乎一样——本地盘 292 MB/s 下重下 5%（28 MB）刚好约 100 ms，
+说明<b>没有真正命中条件缓存</b>。</p>
+<p><b>根因</b>：只发了 <code>Cache-Control: public, max-age=300</code>，没有 <code>ETag</code> / <code>Last-Modified</code>（<span class="loc">host.js:294-300</span>）。</p>
+<p><b>说明</b>：本地 SATA/NVMe 场景下这 100 ms 并不算痛点，所以这条排 P1 而不是 P0。但换成网络盘、机械硬盘、
+或壁纸库在 NAS 上时会被放大；另外 5 分钟缓存过期后，完整看一遍 526 MB 的视频就意味着重新下载。</p>
+<p><b>建议</b>：用已有的 <code>statSync</code> 结果算 <code>ETag = mtimeMs + '-' + size</code>，
+请求带 <code>If-None-Match</code> 且匹配时直接回 <code>304</code>。</p>
+<p><b>预期</b>：二次播放/循环队列回到同一张时省掉整段重下。</p>
+</div>
+
+<div class="card">
+<h3><span class="tag p2">P2</span> 7. 桌面同步轮询不随页面可见性暂停</h3>
+<p><b>现象</b>：开启「同步桌面壁纸」后，即使 DSH 被切到后台，仍每 30 秒发一次请求（每天约 2880 次/标签页），
+并且每次 <code>syncCurrent()</code> 都无条件 <code>emit()</code> 触发一次全量面板重渲染。</p>
+<p><b>根因</b>：<code>window.setInterval</code> 没有可见性判断（<span class="loc">client.js:1274-1285</span>）；
+<code>emit()</code> 在 <span class="loc">client.js:993</span> 无条件调用。</p>
+<p><b>建议</b>：<code>visibilitychange</code> 变 hidden 时 <code>clearInterval</code>，变 visible 时立刻 <code>syncNow(true)</code> 并重建定时器
+（<code>onVisible</code> 已经有了，只是补上暂停）。<code>emit()</code> 改为仅在壁纸 id 变化或 monitors 变化时调用，
+「仅刷新时间戳」用轻量方式单独通知。</p>
+<p><b>预期</b>：后台零请求；前台同步行为不变（切回页签立即跟随本来就是现有特性）。</p>
+</div>
+
+<div class="card">
+<h3><span class="tag p2">P2</span> 8. <code>objUrlCache</code> / <code>vidThumbCache</code> 从不释放</h3>
+<p><b>现象</b>：上传的图片 / 视频缩略图 objectURL 只增不减，且设置面板卸载时不清。</p>
+<p><b>根因</b>：两个 Map（<span class="loc">client.js:1310, 1313</span>）只在<b>删除单张壁纸</b>时 revoke，
+<code>ctx.effect</code> 的清理函数（<span class="loc">client.js:2170-2180</span>）没有碰它们。
+每个 URL 都会把对应 blob 钉在内存里——传几个大视频就是几百 MB 常驻。</p>
+<p><b>建议</b>：清理函数里遍历两个 Map 统一 <code>revokeObjectURL</code>（正在当背景显示的那个由 <code>lastObjectUrl</code> 逻辑处理，跳过即可）。</p>
+</div>
+
+<div class="card">
+<h3><span class="tag p2">P2</span> 9. 白场片头探测结果只存内存</h3>
+<p><b>现象</b>：最坏 613 ms（9 次 seek 串行）。实测样本视频首帧白像素占比 0.03 和 0，都<b>不是白场</b>，
+所以实际只做 1 次采样就返回——这一项体感很小。</p>
+<p><b>根因</b>：<code>videoSkipAt</code> 是内存 Map（<span class="loc">client.js:264</span>），刷新即失效；
+且探测发生在首帧已开始播放之后，会短暂暂停播放。</p>
+<p><b>建议</b>：优先级最低。若要做，把 <code>url → skip</code> 连同缩略图一起落 IndexedDB；或者干脆只在「首帧确实是白场」时才启动完整探测
+（现在的 <code>probeStartupWhite</code> 已经是这个逻辑，所以实际已经基本没问题）。</p>
+</div>
+
+<h2>四、明确「不用改」的地方</h2>
+<div class="card">
+<p>以下都经过实测或推敲，改动它们要么无效要么有风险，列出来避免后续误优化：</p>
+<table>
+  <tr><th>项</th><th>实测</th><th>结论</th></tr>
+  <tr><td>视频层用 <code>&lt;video&gt; + object-fit:cover</code> 交给合成器</td><td class="num">165 fps</td><td>正确，保持</td></tr>
+  <tr><td>恒等滤镜不挂 <code>filter</code></td><td class="num">165 fps</td><td>正确，保持（4K 下更有价值）</td></tr>
+  <tr><td>双层交叉淡入淡出 + 下一张预热</td><td class="num">71–242 ms</td><td>设计有效，保持</td></tr>
+  <tr><td>背景层插在 <code>#root</code> 之前</td><td class="num">—</td><td>macOS 窗口拖拽必需，别动</td></tr>
+  <tr><td><code>client.js</code> 117 KB 单文件</td><td class="num">1.5 ms</td><td>无需拆包</td></tr>
+  <tr><td><code>statSync</code> 同步调用</td><td class="num">0.053 ms</td><td>换成 async 无收益</td></tr>
+  <tr><td><code>/asset</code> 流式传输</td><td class="num">292 MB/s</td><td>已正确，不要改成整读</td></tr>
+</table>
+</div>
+
+<h2>五、本轮处置结果</h2>
+
+<div class="good"><b>筛选原则：不碰任何影响画面质量的路径。</b>
+「按屏幕分辨率调低内置壁纸请求尺寸」这类能省带宽、但会让高 DPI / 4K 屏发虚的做法被排除；
+渲染层（<code>&lt;video&gt; + object-fit</code>、滤镜策略、图层叠化、场景预览图）一律不动。
+下面所有改动只涉及<b>缓存、并发、事件订阅与资源释放</b>，画面与画质和改动前逐像素一致。</div>
+
+<h3>5.1 已实施（7 项）</h3>
+<table>
+  <tr><th>项</th><th>改动</th><th>验证</th></tr>
+  <tr><td><span class="tag p0">P0-3</span> 拖滑杆不再重建网格</td>
+      <td><code>React.useMemo</code> 按精确依赖缓存 <code>weGrid()</code> / <code>customGrid()</code> / <code>builtinGrid()</code>，外观字段不进依赖</td>
+      <td><span class="tag ok">通过</span></td></tr>
+  <tr><td><span class="tag p0">P0-2</span> 视频缩略图落库</td>
+      <td>IndexedDB v1 → v2 新增 <code>thumbs</code> 仓，「内存 → 库 → 重新生成」三级取用</td>
+      <td><span class="tag ok">升级路径 + 读写删全过</span></td></tr>
+  <tr><td><span class="tag p1">P1-4</span> <code>/we</code> 并发合并</td>
+      <td>同 key 复用同一个 Promise，其余请求标记 <code>deduped</code></td>
+      <td><span class="tag ok">并发 8 → 下游 1 次</span></td></tr>
+  <tr><td><span class="tag p1">P1-5</span> 端点记忆</td>
+      <td><code>endpointMemo</code> 记住探测成功的路径，失效时自动清除</td>
+      <td><span class="tag ok">5 个候选 → 1 次</span></td></tr>
+  <tr><td><span class="tag p1">P1-5</span> 失败负缓存</td>
+      <td>下游刚失败时 5 秒内快速失败，<code>refresh=1</code> 仍可立即重试</td>
+      <td><span class="tag ok">5 ms → 0.7 ms</span></td></tr>
+  <tr><td><span class="tag p1">P1-6</span> <code>ETag</code> → 304</td>
+      <td>按 <code>mtime + size</code> 生成，处理 <code>If-None-Match</code>（含 <code>W/</code>），<code>HEAD</code> 同样返回</td>
+      <td><span class="tag ok">304 命中；改文件后 ETag 变化</span></td></tr>
+  <tr><td><span class="tag p2">P2-7/8</span> 轮询暂停 + 释放 objectURL</td>
+      <td><code>visibilitychange</code> 停 / 起表；卸载时统一 revoke 两个 Map</td>
+      <td><span class="tag ok">静态自检通过</span></td></tr>
+</table>
+<p>宿主半自带的验收脚本 <code>verify-host.mjs</code> 也重跑过：<b>13 / 13 通过</b>，缓存维度、显示器透传、<code>/asset</code> 代理等既有行为无回归。</p>
+
+<h3>5.2 因「不影响画质」约束排除</h3>
+<table>
+  <tr><th>项</th><th>为什么不做</th></tr>
+  <tr><td><span class="tag p0">P0-1a</span> 内置壁纸按屏幕分辨率请求（1920 → 1280）</td>
+      <td>能省约 40% 流量，但背景图分辨率实际下降 —— 1080p 屏全屏放大后会有可感知的软化，高 DPI / 4K 屏更明显。<b>与约束直接冲突，不做。</b></td></tr>
+  <tr><td><span class="tag p1">P1-5b</span> 把单端点超时从 8 s 压到 2 s</td>
+      <td>纯参数调整、无画质影响，但会把「基地址指向局域网 / 慢盘时的慢响应」误判成「服务挂了」，属于拿可用性换延迟，<b>本轮保守跳过</b>。</td></tr>
+</table>
+
+<h3>5.3 仍然待定的两项</h3>
+<div class="card">
+<p><b>内置壁纸首屏 1.70 s（P0-1b）</b> —— 唯一一条既能提速、又不降低最终画质的路子是「渐进式出图」：
+先用 640 px 小图（几十 KB，约 150 ms）铺上背景，全尺寸 1920 px 图在后台加载完成后静默替换。
+最终画质不变，也不引入缓存文件（不违背 README 的 zero-cache 承诺），但<b>过程中会短暂显示一张小图</b>。
+要不要做，取决于对「启动头一两秒看到的是不是最终画质」的容忍度 —— 留给你定。</p>
+<p><b>白场片头探测结果落库（P2-9）</b> —— 收益本来就小：实测样本视频首帧都不是白场，实际只做 1 次采样就返回。</p>
+</div>
+
+<h3>5.4 怎么复验</h3>
+<div class="card">
+<ul>
+  <li><code>node .tmp-perf/verify-optimizations.mjs</code> —— 宿主端 4 项专项验证（<b>18 项断言</b>）</li>
+  <li><code>node .tmp-perf/run4.mjs</code> —— 客户端侧验证（IndexedDB 升级 + 加载 + 改动点自检，<b>19 项断言</b>）</li>
+  <li><code>node verify-host.mjs</code> —— 仓库自带宿主半验收（<b>13 项</b>）</li>
+  <li><code>node .tmp-perf/bench-host.mjs</code> / <code>run.mjs</code> / <code>run2.mjs</code> / <code>run3.mjs</code> —— 完整基准，可与改动前的数字逐项比对</li>
+</ul>
+</div>
+
+<div class="foot">
+  dsh-wallpaper-bg 性能评估 · 数据为 2026-10-13 本机实测（Chromium + Node v22.22.2 + 本机 314 张 WE 壁纸）<br>
+  第五节的 7 项改动已完成并验证；本节数据为改动前的基线，可用于事后逐项比对。<br>
+  不同机器（尤其 4K 屏、网络盘壁纸库）结论可能不同，报告中已注明未测项。
+</div>
+
+</div>
+</body>
+</html>

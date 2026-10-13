@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-> v0.5.12 · MIT License
+> v0.5.13 · MIT License
 
 [![npm version](https://img.shields.io/npm/v/dsh-wallpaper-bg?label=npm&color=cb3837)](https://www.npmjs.com/package/dsh-wallpaper-bg)
 [![npm downloads](https://img.shields.io/npm/dm/dsh-wallpaper-bg?label=downloads)](https://www.npmjs.com/package/dsh-wallpaper-bg)
@@ -63,7 +63,7 @@ From a checkout, link the repo instead: `dsh plugin --profile web add link:<abso
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg@latest    # move to the newest release
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.12     # or pin an exact version
+dsh plugin --profile web add dsh-wallpaper-bg@0.5.13     # or pin an exact version
 ```
 
 > pnpm 11 installs a release only after it is a day old (24 h `minimumReleaseAge`), so a just-published version resolves to the previous one for roughly a day. Name the exact version to take it immediately.
