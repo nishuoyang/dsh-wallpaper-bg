@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-> v0.5.14 · MIT License
+> v0.5.15 · MIT License
 
 [![npm version](https://img.shields.io/npm/v/dsh-wallpaper-bg?label=npm&color=cb3837)](https://www.npmjs.com/package/dsh-wallpaper-bg)
 [![npm downloads](https://img.shields.io/npm/dm/dsh-wallpaper-bg?label=downloads)](https://www.npmjs.com/package/dsh-wallpaper-bg)
@@ -11,7 +11,7 @@
 
 English | [中文](README.zh.md)
 
-A static two-half plugin that puts an **independent animated wallpaper layer** under the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH) interface — both the browser UI (`dsh web`) and the 0.2 **desktop app**. Install it with one command (or just the package name in the desktop app's plugin page) and the whole interface sits on a moving wallpaper. The background layer is fully independent from the desktop Wallpaper Engine: changing wallpapers inside DSH never touches your desktop wallpaper, and vice versa.
+A static two-half plugin that puts an **independent animated wallpaper layer** under the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH) interface — both the browser UI (`dsh web`) and the 0.2 **desktop app** (0.2.1 verified). Install it with one command (or just the package name in the desktop app's plugin page) and the whole interface sits on a moving wallpaper. The background layer is fully independent from the desktop Wallpaper Engine: changing wallpapers inside DSH never touches your desktop wallpaper, and vice versa.
 
 ![dsh-wallpaper-bg at a glance: the DSH interface sitting on an animated wallpaper, in native background mode](docs/screenshots/preview-hero.jpg)
 
@@ -34,7 +34,7 @@ Full option-by-option reference: [Configuration](docs/configuration.md).
 
 ### Prerequisites
 
-- **DeepSeek Harness desktop app (0.2 preview or later)** — the app bundles its own Node.js / pnpm runtime, so nothing else is needed;
+- **DeepSeek Harness desktop app (0.2 preview or later; 0.2.1 verified)** — the app bundles its own Node.js / pnpm runtime, so nothing else is needed;
 - **or a CLI install** (`dsh web`) with Node.js ≥ 20 (`node -v`) and a working DeepSeek Harness;
 - the optional WE library source adds its own requirements (Windows, a local Wallpaper Engine install, and the `dsh-wallpaper-engine-api` companion plugin — one command, no clone / `npm install` / `.bat` / autostart) — see [WE library service](docs/we-library-service.md).
 
@@ -75,7 +75,7 @@ It serves a read-only WE API on `127.0.0.1:8088` and follows the DSH lifecycle; 
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg@latest    # move to the newest release
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.14     # or pin an exact version
+dsh plugin --profile web add dsh-wallpaper-bg@0.5.15     # or pin an exact version
 ```
 
 > pnpm 11 installs a release only after it is a day old (24 h `minimumReleaseAge`), so a just-published version resolves to the previous one for roughly a day. Name the exact version to take it immediately.

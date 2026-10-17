@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg 故障排查手册
 
-> 适用版本：插件 **0.5.14**（宿主半 `/dsh-wallpaper-bg/health` 里的 `version`）、可选配套插件 **dsh-wallpaper-engine-api 0.1.0**（同源 `/dsh-wallpaper-engine-api/status`）；旧的手动服务仍为 WE API **0.5.1**（`http://127.0.0.1:8088/health` 里的 `version`）。
+> 适用版本：插件 **0.5.15**（宿主半 `/dsh-wallpaper-bg/health` 里的 `version`）、可选配套插件 **dsh-wallpaper-engine-api 0.1.0**（同源 `/dsh-wallpaper-engine-api/status`）；旧的手动服务仍为 WE API **0.5.1**（`http://127.0.0.1:8088/health` 里的 `version`）。
 > **0.5.14 起，WE 壁纸库优先用配套插件**：`dsh plugin --profile <name> add dsh-wallpaper-engine-api`（或桌面端 设置 → 插件 填包名）。下文 §4.1–§4.12 里涉及 `wallpaper-engine-api/` 目录、`.bat`、开机自启、PATH 里的 Node.js 的步骤，只适用于**旧的手动部署**。
 > 本文只回答一个问题：**出状况时按什么顺序查、每一步对应什么动作**。功能说明与安装步骤见 [`README.zh.md`](../README.zh.md)（英文版 [`README.md`](../README.md)），逐版变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
 
@@ -20,7 +20,7 @@
 
 | # | 检查 | 怎么做 | 正常应该看到 |
 | --- | --- | --- | --- |
-| 1 | 插件宿主半是否挂上 | 浏览器打开 `http://127.0.0.1:19387/dsh-wallpaper-bg/health`（桌面端固定 19387）；`dsh web` 默认换 **3080** | `{"ok":true,"plugin":"dsh-wallpaper-bg","version":"0.5.14","monitorForward":1,"discoverWeApi":1}` |
+| 1 | 插件宿主半是否挂上 | 浏览器打开 `http://127.0.0.1:19387/dsh-wallpaper-bg/health`（桌面端固定 19387）；`dsh web` 默认换 **3080** | `{"ok":true,"plugin":"dsh-wallpaper-bg","version":"0.5.15","monitorForward":1,"discoverWeApi":1}` |
 | 2 | WE API 是否可用（只影响 WE 壁纸库） | 先看 `<DSH 地址>/dsh-wallpaper-engine-api/status`；再看它的 `base`（通常 `http://127.0.0.1:8088`）的 `/health` | `{"ok":true,"status":"running","base":"http://127.0.0.1:8088",…}`；服务 `/health` 含 `"mode":"readonly"` |
 | 3 | profile 是否真把它当组合层加载 | 仓库里 `node .\bin\dsh-wallpaper-bg.js status`（或用 `npx dsh-wallpaper-bg status`） | 出现 `installed（bundle 层，随 DSH 启动加载）` |
 
@@ -54,6 +54,8 @@
 | 网页壁纸点不动、音频可视化没声音 | 设计如此：背景层不拦鼠标，浏览器里没有 WE 音频采集 | [§3.9](#39-网页壁纸点不动音频可视化没声音) |
 | 场景壁纸放大后发虚、看着不像动态 | WE 工坊预览图本身只有 192×192 | [§3.10](#310-场景壁纸发虚看着不像动态的) |
 | macOS 上装上插件后 DSH 窗口拖不动 | 0.5.9 已修的老问题 | [§3.11](#311-macos-桌面端窗口拖不动双击不放大) |
+| 桌面端顶部有一条 40px 半透明带 / 想让它全透明 | 0.2.1 的原生标题栏，底色取自侧栏 token | [§3.13](#313-windows-顶部-40px-标题栏为什么是半透明的--能不能不压暗) |
+| 窗口一缩小界面就略微变暗，拉回原尺寸又复原 | 0.5.15 已修：cover 裁剪区的亮度漂移 | [§3.14](#314-窗口一缩小界面就略微变暗拉回原尺寸又复原) |
 | WE 页签「连不上 WE API 服务」 | 没装 / 没启用配套插件，或旧服务没在跑 | [§4.0](#40-配套插件推荐dsh-wallpaper-engine-api) · [§4.1](#41-以下为旧手动服务wallpaper-engine-api-的排障) |
 | `/dsh-wallpaper-engine-api/status` 404 | 配套插件没装进当前 profile，或装完没重启 DSH | [§4.0](#40-配套插件推荐dsh-wallpaper-engine-api) |
 | 配套插件启用但未激活（failed to import） | 模块导入错误 / 包版本不匹配 | [§4.0](#40-配套插件推荐dsh-wallpaper-engine-api) |
@@ -95,8 +97,8 @@ DSH 只在把插件记进 profile 的 **组合层列表** 时才加载它；依�
 2. 重跑一次安装命令把列表补上（**带上版本号**，否则可能装到旧版，见 [§2.3](#23-版本比-npm-上的旧--重复-add-不升级)）：
 
    ```bash
-   dsh plugin --profile web add dsh-wallpaper-bg@0.5.14     # 网页版 / 命令行
-   dsh plugin --profile desktop add dsh-wallpaper-bg@0.5.14 # 桌面端（等价于插件页面里重装）
+   dsh plugin --profile web add dsh-wallpaper-bg@0.5.15     # 网页版 / 命令行
+   dsh plugin --profile desktop add dsh-wallpaper-bg@0.5.15 # 桌面端（等价于插件页面里重装）
    ```
 
    也可以直接检查 `%DSH_HOME%\profiles\<profile>\package.json`（`DSH_HOME` 默认 `C:\Users\<你>\.dsh`）里 `dsh.profile.bundles` 数组是否含 `dsh-wallpaper-bg`。
@@ -128,8 +130,8 @@ dsh plugin --profile <profile> remove dsh-wallpaper-bg
 
 | 现象 | 原因 | 解决 |
 | --- | --- | --- |
-| 重复跑 `dsh plugin … add dsh-wallpaper-bg` 版本纹丝不动 | `add` 转发给 `pnpm add`，pnpm 保留清单里已有的版本范围（停在 `^0.4.1` 就永远是 0.4.x） | 显式写版本或 `@latest`：`… add dsh-wallpaper-bg@latest` / `… add dsh-wallpaper-bg@0.5.14` |
-| `@latest` 也装到上一个版本，命令还提示 `(0.5.14 is available)` | pnpm 11 默认 24 小时 `minimumReleaseAge`（供应链保护）：发布未满一天的版本会被跳过 | 三选一：写死版本号；加 `--config.minimumReleaseAge=0`；在 profile 的 `pnpm-workspace.yaml` 里写 `minimumReleaseAgeExclude: [dsh-wallpaper-bg]` |
+| 重复跑 `dsh plugin … add dsh-wallpaper-bg` 版本纹丝不动 | `add` 转发给 `pnpm add`，pnpm 保留清单里已有的版本范围（停在 `^0.4.1` 就永远是 0.4.x） | 显式写版本或 `@latest`：`… add dsh-wallpaper-bg@latest` / `… add dsh-wallpaper-bg@0.5.15` |
+| `@latest` 也装到上一个版本，命令还提示 `(0.5.15 is available)` | pnpm 11 默认 24 小时 `minimumReleaseAge`（供应链保护）：发布未满一天的版本会被跳过 | 三选一：写死版本号；加 `--config.minimumReleaseAge=0`；在 profile 的 `pnpm-workspace.yaml` 里写 `minimumReleaseAgeExclude: [dsh-wallpaper-bg]` |
 
 桌面端的「设置 → 插件」页面走的是同一个 pnpm，所以刚发布的版本同样要等约一天才会出现在那里。
 
@@ -353,6 +355,20 @@ profile "desktop" is managed exclusively by the Electron application
 - 队列需要**开启「循环播放」**才会自动切换；「每张时长」1–10 分钟，两个队列（自定义、WE）共用这个值。
 - 队列项被删除（源素材没了）时会留一个「（已删除的壁纸）」占位——把它移出队列，否则会卡在它上面。
 - 队列内容 / 开关 / 播放下标都存在 localStorage，刷新后保留；如果重启后队列空了，按 [§3.6](#36-上传之后网格里没有新壁纸也没有任何报错) 检查站点数据是否可用。
+
+### 3.13 Windows 顶部 40px 标题栏为什么是半透明的 / 能不能不压暗
+
+这是**桌面端 0.2.1 的窗口 chrome，不是插件的遮罩**：主窗口用 `titleBarStyle:"hidden"` + 40px `titleBarOverlay`，渲染进程的 preload 会用 `--dsw-specific-sidebar-fill` 采样标题栏底色，再经 `windowsAppearance` IPC 交给主进程。插件把该 token 改成半透明后，标题栏就变成「壁纸 × 侧栏色」——与侧栏、页面用同一套强度，所以看起来是一条半透明带，而不是纯壁纸。
+
+- 想让标题栏完全露出壁纸：打开主页面标题区的**「原生背景」**开关。该模式下 `--dsw-specific-sidebar-fill` 是 `transparent`，标题栏也会一起变透明（同时清掉雾层/遮罩与页面表面）。代价是标题栏右侧的最小化/最大化/关闭图标直接压在壁纸上，亮色壁纸下可读性会下降。
+- 不要试图用 CSS 把标题栏单独改成不透明：`titleBarOverlay` 的颜色来自主进程采样，改页面样式只能改到下面那层 `::before`，两边会不同步。
+- 这不影响 macOS：macOS 用 `hiddenInset` + 系统红绿灯，没有这条 40px 带。
+
+### 3.14 窗口一缩小界面就略微变暗，拉回原尺寸又复原
+
+背景层是 `background-size:cover`：窗口宽高比一变，可见裁剪区就换成源图的另一块。插件把界面表面做成半透明后，界面颜色 = 表面色 × α + 壁纸可见区亮度 × (1−α)，于是会跟着裁剪区平均亮度漂移；尺寸复原 → 裁剪复原 → 颜色精确复原 —— 这正是「可逆、且只在缩放时出现」的原因。
+
+**0.5.15 已修**：壁纸解码后顺手缩一张 32×32 亮度图，按当前视口把可见裁剪区的均值积出来，反推雾层 / 遮罩的 alpha（最多补偿 ±22%）。只改一个 `background-color` 的 alpha，不碰壁纸像素、不加滤镜，画质与视频帧率不变。纯色壁纸补偿量为 0；视频 / 网页壁纸、跨域且无 CORS 头的图、「原生背景」模式自动不介入。
 
 ---
 

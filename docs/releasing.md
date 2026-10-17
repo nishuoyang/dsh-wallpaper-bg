@@ -1,6 +1,6 @@
 # 发布流程与 CI
 
-> 适用版本：dsh-wallpaper-bg 0.5.14。本页说明仓库自带的一键发布脚本与两个 GitHub Actions 工作流。
+> 适用版本：dsh-wallpaper-bg 0.5.15。本页说明仓库自带的一键发布脚本与两个 GitHub Actions 工作流。
 
 - [scripts/release.ps1](#scriptsreleaseps1)
 - [预检与断点续跑](#预检与断点续跑)

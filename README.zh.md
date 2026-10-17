@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-> v0.5.14 · MIT License
+> v0.5.15 · MIT License
 
 [![npm version](https://img.shields.io/npm/v/dsh-wallpaper-bg?label=npm&color=cb3837)](https://www.npmjs.com/package/dsh-wallpaper-bg)
 [![npm downloads](https://img.shields.io/npm/dm/dsh-wallpaper-bg?label=downloads)](https://www.npmjs.com/package/dsh-wallpaper-bg)
@@ -11,7 +11,7 @@
 
 [English](README.md) | 中文
 
-给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）界面加上一层**独立的动态壁纸背景**的静态双半插件——`dsh web` 网页界面和 0.2 **桌面端**都适用：装好（命令行一条命令；桌面端更是只在插件页面里填个包名）、刷新页面，整个界面的底层就变成一张会动的壁纸。背景层与桌面 Wallpaper Engine 完全独立：在 DSH 里换壁纸不会动你的桌面壁纸，反之亦然。
+给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）界面加上一层**独立的动态壁纸背景**的静态双半插件——`dsh web` 网页界面和 0.2 **桌面端**（0.2.1 已复核）都适用：装好（命令行一条命令；桌面端更是只在插件页面里填个包名）、刷新页面，整个界面的底层就变成一张会动的壁纸。背景层与桌面 Wallpaper Engine 完全独立：在 DSH 里换壁纸不会动你的桌面壁纸，反之亦然。
 
 ![一览：DSH 界面坐在会动的壁纸上（原生背景模式）](docs/screenshots/preview-hero.jpg)
 
@@ -34,7 +34,7 @@
 
 ### 前提条件
 
-- **DeepSeek Harness 桌面端（0.2 预览版或更新）**——桌面端自带 Node.js / pnpm 运行时，插件本体**无需自装 Node**；
+- **DeepSeek Harness 桌面端（0.2 预览版或更新；0.2.1 已复核）**——桌面端自带 Node.js / pnpm 运行时，插件本体**无需自装 Node**；
 - **或者命令行方式**（`dsh web`）：Node.js ≥ 20（`node -v` 检查）+ 能正常启动的 DeepSeek Harness；
 - 可选的「WE 壁纸库」来源另有前提：Windows + 本机 Wallpaper Engine + 配套插件 `dsh-wallpaper-engine-api`（一条命令装好，不再需要 clone / `npm install` / `.bat` / 开机自启）。详见 [WE 壁纸库服务](docs/we-library-service.md)。
 
@@ -75,7 +75,7 @@ dsh plugin --profile desktop add dsh-wallpaper-engine-api  # 桌面端（或在 
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg@latest    # 升到最新发布版
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.14     # 或锁定某个具体版本
+dsh plugin --profile web add dsh-wallpaper-bg@0.5.15     # 或锁定某个具体版本
 ```
 
 > pnpm 11 只安装「发布满一天」的版本（默认 24 小时 `minimumReleaseAge`），刚发布的版本约一天内只会解析到上一个版本；写死版本号即可立刻装上。

@@ -1,10 +1,11 @@
 # 架构与原理
 
-> 适用版本：dsh-wallpaper-bg 0.5.14（配套插件 dsh-wallpaper-engine-api 0.1.0）。本页说明本包的双半结构、组合方式与运行时的加载 / 刷新规则。
+> 适用版本：dsh-wallpaper-bg 0.5.15（配套插件 dsh-wallpaper-engine-api 0.1.0）。本页说明本包的双半结构、组合方式与运行时的加载 / 刷新规则。
 
 - [双半结构](#双半结构)
 - [零构建与 CLI](#零构建与-cli)
 - [运行时加载规则](#运行时加载规则)
+- [桌面端窗口镶嵌（0.2.1 起）](#桌面端窗口镶嵌021-起)
 - [仓库结构速览](#仓库结构速览)
 
 ## 双半结构
@@ -37,6 +38,19 @@
 - 增删插件行 / 修改 `dsh.client` 声明等插件集合变化同样需要重启；
 - 判断当前跑的是哪版宿主半：打开 `<DSH 地址>/dsh-wallpaper-bg/health` 看 `version`（桌面端固定 19387 端口，`dsh web` 默认 3080）。0.5.14 起该响应还带 `discoverWeApi: 1`。
 - 改宿主的 `weApi` 发现逻辑或配套插件后，同样需要重启 DSH；配套插件是 host 平面模块，不支持进程内热重载。
+
+## 桌面端窗口镶嵌（0.2.1 起）
+
+桌面端 0.2.1-rc.2 把窗口 chrome 交给主进程与 preload 协同完成。插件没有为此增加分支，但改样式时要避开这些前提：
+
+| 机制 | 0.2.1 的实现 | 对本插件意味着什么 |
+| --- | --- | --- |
+| Windows 标题栏 | 主窗口 `titleBarStyle:"hidden"` + 40px `titleBarOverlay`；preload 用 `--dsw-specific-sidebar-fill` 采样底色，经 `windowsAppearance` IPC 交给主进程 `setTitleBarOverlay()` | 插件把该 token 改成半透明后，标题栏自动变成「壁纸 × 侧栏色」；原生背景模式下 token 为 transparent，标题栏也完全透明 |
+| 标题栏占位 | `html[data-windows-titlebar]` 声明 `--dsh-windows-titlebar-height:40px`；布局框架用 `padding-top` 让出 40px，并用 `::before` 画标题栏底色 | 背景层是 `position:fixed` 的全视口层，壁纸仍覆盖标题栏区域，不会被 40px 占位切掉 |
+| macOS | `data-platform=darwin`；`body{background:transparent;isolation:isolate}`；`body>:not(#root){-webkit-app-region:no-drag}`；窗口用 `hiddenInset` + `vibrancy` | 两个全屏层必须插在 `#root` **之前**（0.5.9 的拖拽修复），0.2.1 仍保持该规则 |
+| 弹窗 | `[role=dialog]` 宿主 + 遮罩 `--dsw-alias-bg-mask-1`；0.2.1 的遮罩另带 `backdrop-filter:var(--dsw-mask-blur)` | 插件只覆盖 `bg-base`、`bg-layer-1/2`、侧栏 token；layer-3/4 在 0.2.1 里被当前景色与 hover 底色使用，不能全局透明化 |
+
+升级桌面端后，先复核这四处：`--dsw-specific-sidebar-fill` 是否仍是标题栏采样源、`body>:not(#root)` 规则是否还在、`[role=dialog]` 是否仍是设置弹窗宿主、`[data-composer-seat]` 是否还在（原生背景模式依赖它给输入框补半透明底色）。
 
 ## 仓库结构速览
 

@@ -4,7 +4,16 @@
 
 > 发版时把下面的 `## [未发布]` 改成 `## [x.y.z] - YYYY-MM-DD`（`scripts/release.ps1` 要求存在对应版本条目）。
 
-## [未发布]
+## [0.5.15] - 2026-10-18
+
+### 兼容性
+
+- **桌面端 0.2.1-rc.2 适配复核**（Windows 真实桌面端 + 客户端源码比对，结论：无需改动渲染路径）：
+  - **新标题栏**：0.2.1 主窗口改用 `titleBarStyle:"hidden"` + 40px `titleBarOverlay`；preload 用 `--dsw-specific-sidebar-fill` 采样底色，经 `windowsAppearance` IPC 交给主进程 `setTitleBarOverlay()`。本插件把该 token 改成半透明后，标题栏自动变成「壁纸 × 侧栏色」——实测标题栏条带亮度约为主内容的一半（与侧栏同一强度），不需要额外代码；「原生背景」模式下该 token 为 transparent，标题栏也一起完全露出壁纸。
+  - 本插件依赖的 DOM/API 在 0.2.1 全部仍在：`#root`、`[role=dialog]`、`[data-composer-seat]`（原生背景模式靠它给输入框补半透明底色）、`data-ds-dark-theme`、`theme.overrideTokens`，以及 macOS 的 `body>:not(#root){-webkit-app-region:no-drag}`（0.5.9 的窗口拖拽修复继续有效）。
+  - 0.2.1 新增的 `--dsw-alias-bg-layer-3` / `-4` 分别被用作**前景色**（错误徽标、提示文字）和 hover 底色，**不能**像 layer-1/2 那样全局改成半透明，否则文字会一起变透明 —— 本版有意不覆盖它们。
+  - 设置弹窗换成大面板 + `backdrop-filter` 遮罩后，实测弹窗内外亮度处在同一水平（差异落在壁纸内容起伏范围内），0.5.14 的弹窗亮度处理无需调整。
+  - 文档：架构页新增「桌面端窗口镶嵌」一节（标题栏 / 弹窗 / macOS 的适配点，以及升级桌面端后要复核的四处）；故障排查新增「Windows 顶部 40px 标题栏为什么是半透明」。
 
 ### 修复
 
