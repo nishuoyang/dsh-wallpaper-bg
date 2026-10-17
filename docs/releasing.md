@@ -1,6 +1,6 @@
 # 发布流程与 CI
 
-> 适用版本：dsh-wallpaper-bg 0.5.13。本页说明仓库自带的一键发布脚本与两个 GitHub Actions 工作流。
+> 适用版本：dsh-wallpaper-bg 0.5.14。本页说明仓库自带的一键发布脚本与两个 GitHub Actions 工作流。
 
 - [scripts/release.ps1](#scriptsreleaseps1)
 - [预检与断点续跑](#预检与断点续跑)
@@ -42,6 +42,19 @@
 它默认只手动触发，是为了绝不与 `release.ps1` 的本地 `npm publish` 抢同一个版本号；想把发布完全搬到 CI，就先 `.\scripts\release.ps1 -SkipNpm` 让本地跳过，再启用工作流里的 `push.tags` 触发。
 
 镜像工作流用自带的 `GITHUB_TOKEN` 发布；首次发布默认可见性是 private，可在包设置里改成 public。注意 GitHub Packages 的 npm 源**即使包是 public，install 时也必须带 token**——所以对外安装始终走 npmjs（`dsh plugin add dsh-wallpaper-bg`，或桌面端插件页里填包名），镜像只为 GitHub 侧展示。
+
+## 配套插件 dsh-wallpaper-engine-api
+
+`dsh-wallpaper-engine-api/` 是独立 npm 包，**不随** `release.ps1` 发布（脚本只处理仓库根的 `dsh-wallpaper-bg`）。它需要单独发版：
+
+```powershell
+cd dsh-wallpaper-engine-api
+npm test                     # 离线 fixture 验收
+npm pack --dry-run           # 检查 files 列表
+npm publish --access public
+```
+
+发版前把 `dsh-wallpaper-engine-api/CHANGELOG.md` 里的版本条目补齐，并确认 `package.json` 的 `files` 包含 `index.js`、`lib/`、`cordis.patch.yml`、`locale/*.json`、`icon.svg`、两个 README 与 LICENSE。主插件通过同源状态路由发现它，两者版本可以独立升级；只有契约（`/dsh-wallpaper-engine-api/status` 的 `base` 字段）变化时才需要同时升级主插件。
 
 ## legacy 目录
 

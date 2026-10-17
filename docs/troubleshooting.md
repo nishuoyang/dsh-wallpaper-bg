@@ -1,6 +1,7 @@
 # dsh-wallpaper-bg 故障排查手册
 
-> 适用版本：插件 **0.5.13**（宿主半 `/dsh-wallpaper-bg/health` 里的 `version`）、可选服务 WE API **0.5.1**（`http://127.0.0.1:8088/health` 里的 `version`）。
+> 适用版本：插件 **0.5.14**（宿主半 `/dsh-wallpaper-bg/health` 里的 `version`）、可选配套插件 **dsh-wallpaper-engine-api 0.1.0**（同源 `/dsh-wallpaper-engine-api/status`）；旧的手动服务仍为 WE API **0.5.1**（`http://127.0.0.1:8088/health` 里的 `version`）。
+> **0.5.14 起，WE 壁纸库优先用配套插件**：`dsh plugin --profile <name> add dsh-wallpaper-engine-api`（或桌面端 设置 → 插件 填包名）。下文 §4.1–§4.12 里涉及 `wallpaper-engine-api/` 目录、`.bat`、开机自启、PATH 里的 Node.js 的步骤，只适用于**旧的手动部署**。
 > 本文只回答一个问题：**出状况时按什么顺序查、每一步对应什么动作**。功能说明与安装步骤见 [`README.zh.md`](../README.zh.md)（英文版 [`README.md`](../README.md)），逐版变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
 
 插件分两半，出问题时先分清是哪一半：
@@ -9,7 +10,7 @@
 | --- | --- | --- | --- |
 | 宿主半（`lib/host.js`，Node 侧） | 随 DSH 进程启动加载一次 | **必须重启 DSH** | `/dsh-wallpaper-bg/health` 打不开；面板里所有壁纸都加载不出来 |
 | 浏览器半（`lib/client.js`） | 每次请求从磁盘现读 | 普通刷新页面（F5） | 面板能打开、宿主接口正常，但界面行为不对 |
-| WE API 服务（`wallpaper-engine-api/`，独立 Node 进程） | 自己启动，**不在 DSH 进程里** | 重启该服务 | 只有「WE 壁纸库」页签不行，内置壁纸与自定义上传照常 |
+| WE API 服务（配套插件 `dsh-wallpaper-engine-api`；或旧 `wallpaper-engine-api/` 独立进程） | DSH 宿主进程内（插件）/ 自己启动（旧服务） | 重启 DSH（插件）/ 重启该服务（旧服务） | 只有「WE 壁纸库」页签不行，内置壁纸与自定义上传照常 |
 
 ---
 
@@ -19,8 +20,8 @@
 
 | # | 检查 | 怎么做 | 正常应该看到 |
 | --- | --- | --- | --- |
-| 1 | 插件宿主半是否挂上 | 浏览器打开 `http://127.0.0.1:19387/dsh-wallpaper-bg/health`（桌面端固定 19387）；`dsh web` 默认换 **3080** | `{"ok":true,"plugin":"dsh-wallpaper-bg","version":"0.5.13","monitorForward":1}` |
-| 2 | WE API 服务是否在跑（只影响 WE 壁纸库） | `http://127.0.0.1:8088/health` | `{"ok":true,"service":"we-api-proxy","version":"0.5.1","webShim":1,"monitorSelect":1,…}` |
+| 1 | 插件宿主半是否挂上 | 浏览器打开 `http://127.0.0.1:19387/dsh-wallpaper-bg/health`（桌面端固定 19387）；`dsh web` 默认换 **3080** | `{"ok":true,"plugin":"dsh-wallpaper-bg","version":"0.5.14","monitorForward":1,"discoverWeApi":1}` |
+| 2 | WE API 是否可用（只影响 WE 壁纸库） | 先看 `<DSH 地址>/dsh-wallpaper-engine-api/status`；再看它的 `base`（通常 `http://127.0.0.1:8088`）的 `/health` | `{"ok":true,"status":"running","base":"http://127.0.0.1:8088",…}`；服务 `/health` 含 `"mode":"readonly"` |
 | 3 | profile 是否真把它当组合层加载 | 仓库里 `node .\bin\dsh-wallpaper-bg.js status`（或用 `npx dsh-wallpaper-bg status`） | 出现 `installed（bundle 层，随 DSH 启动加载）` |
 
 判定方向：
@@ -53,7 +54,9 @@
 | 网页壁纸点不动、音频可视化没声音 | 设计如此：背景层不拦鼠标，浏览器里没有 WE 音频采集 | [§3.9](#39-网页壁纸点不动音频可视化没声音) |
 | 场景壁纸放大后发虚、看着不像动态 | WE 工坊预览图本身只有 192×192 | [§3.10](#310-场景壁纸发虚看着不像动态的) |
 | macOS 上装上插件后 DSH 窗口拖不动 | 0.5.9 已修的老问题 | [§3.11](#311-macos-桌面端窗口拖不动双击不放大) |
-| WE 页签「连不上 WE API 服务」 | 服务没在跑 / 没装 / 端口不一致 | [§4.1](#41-we-页签连不上服务) |
+| WE 页签「连不上 WE API 服务」 | 没装 / 没启用配套插件，或旧服务没在跑 | [§4.0](#40-配套插件推荐dsh-wallpaper-engine-api) · [§4.1](#41-以下为旧手动服务wallpaper-engine-api-的排障) |
+| `/dsh-wallpaper-engine-api/status` 404 | 配套插件没装进当前 profile，或装完没重启 DSH | [§4.0](#40-配套插件推荐dsh-wallpaper-engine-api) |
+| 配套插件启用但未激活（failed to import） | 模块导入错误 / 包版本不匹配 | [§4.0](#40-配套插件推荐dsh-wallpaper-engine-api) |
 | 列表还在，但和服务上的对不上 | 服务断过，列表是上次缓存，横幅会提示 | [§4.2](#42-列表还在但可能已过期) |
 | 退出 DSH 再进来服务就没了 | 服务是从 DSH 客户端内部启动的 | [§4.3](#43-退出-dsh-客户端服务就没了) |
 | 双击启动脚本「什么都没发生」 | 跑到了没有向导的静默启动脚本 | [§4.4](#44-双击启动脚本什么都没发生) |
@@ -92,8 +95,8 @@ DSH 只在把插件记进 profile 的 **组合层列表** 时才加载它；依�
 2. 重跑一次安装命令把列表补上（**带上版本号**，否则可能装到旧版，见 [§2.3](#23-版本比-npm-上的旧--重复-add-不升级)）：
 
    ```bash
-   dsh plugin --profile web add dsh-wallpaper-bg@0.5.13     # 网页版 / 命令行
-   dsh plugin --profile desktop add dsh-wallpaper-bg@0.5.13 # 桌面端（等价于插件页面里重装）
+   dsh plugin --profile web add dsh-wallpaper-bg@0.5.14     # 网页版 / 命令行
+   dsh plugin --profile desktop add dsh-wallpaper-bg@0.5.14 # 桌面端（等价于插件页面里重装）
    ```
 
    也可以直接检查 `%DSH_HOME%\profiles\<profile>\package.json`（`DSH_HOME` 默认 `C:\Users\<你>\.dsh`）里 `dsh.profile.bundles` 数组是否含 `dsh-wallpaper-bg`。
@@ -125,8 +128,8 @@ dsh plugin --profile <profile> remove dsh-wallpaper-bg
 
 | 现象 | 原因 | 解决 |
 | --- | --- | --- |
-| 重复跑 `dsh plugin … add dsh-wallpaper-bg` 版本纹丝不动 | `add` 转发给 `pnpm add`，pnpm 保留清单里已有的版本范围（停在 `^0.4.1` 就永远是 0.4.x） | 显式写版本或 `@latest`：`… add dsh-wallpaper-bg@latest` / `… add dsh-wallpaper-bg@0.5.13` |
-| `@latest` 也装到上一个版本，命令还提示 `(0.5.13 is available)` | pnpm 11 默认 24 小时 `minimumReleaseAge`（供应链保护）：发布未满一天的版本会被跳过 | 三选一：写死版本号；加 `--config.minimumReleaseAge=0`；在 profile 的 `pnpm-workspace.yaml` 里写 `minimumReleaseAgeExclude: [dsh-wallpaper-bg]` |
+| 重复跑 `dsh plugin … add dsh-wallpaper-bg` 版本纹丝不动 | `add` 转发给 `pnpm add`，pnpm 保留清单里已有的版本范围（停在 `^0.4.1` 就永远是 0.4.x） | 显式写版本或 `@latest`：`… add dsh-wallpaper-bg@latest` / `… add dsh-wallpaper-bg@0.5.14` |
+| `@latest` 也装到上一个版本，命令还提示 `(0.5.14 is available)` | pnpm 11 默认 24 小时 `minimumReleaseAge`（供应链保护）：发布未满一天的版本会被跳过 | 三选一：写死版本号；加 `--config.minimumReleaseAge=0`；在 profile 的 `pnpm-workspace.yaml` 里写 `minimumReleaseAgeExclude: [dsh-wallpaper-bg]` |
 
 桌面端的「设置 → 插件」页面走的是同一个 pnpm，所以刚发布的版本同样要等约一天才会出现在那里。
 
@@ -353,7 +356,54 @@ profile "desktop" is managed exclusively by the Electron application
 
 ---
 
-## 4. WE 壁纸库（可选服务）
+## 4. WE 壁纸库（可选）
+
+### 4.0 配套插件（推荐：dsh-wallpaper-engine-api）
+
+**0.5.14 起优先用这条路径**，下面 §4.1 之后是旧手动服务的排障手册。
+
+前提：**Windows + 本机 Wallpaper Engine**；主插件已安装。配套插件随 DSH 启停，不需要 PATH 里的 Node.js、不需要 `.bat`、不需要开机自启。
+
+安装：
+
+```bash
+dsh plugin --profile web add dsh-wallpaper-engine-api      # 网页版
+dsh plugin --profile desktop add dsh-wallpaper-engine-api  # 桌面端（或插件页面填包名）
+```
+
+装完**重启 DSH**。检查：
+
+1. `<DSH 地址>/dsh-wallpaper-engine-api/status` 返回 JSON；`base` 是实际服务地址；
+2. `base` 的 `/health` 里 `weInstallPath` / `workshopPath` 非空、`error` 为空；
+3. 面板 WE 页签能列出壁纸。
+
+常见问题：
+
+| 现象 | 处理 |
+| --- | --- |
+| `/status` 404 | 插件没进 `dsh.profile.bundles`，或 DSH 没重启；桌面端用 设置 → 插件 确认已启用后重启 |
+| 启用但未激活 / `failed to import` | 安装结果里有 diagnostic；按提示修正包（通常是版本 / 导出不匹配），重启 DSH |
+| `error` 说找不到 Wallpaper Engine | 在 `cordis.patch.yml` 的 `wallpaper-engine-api` 行里填 `weInstallPath`（含 `wallpaper64.exe` 的目录），或设 `WE_INSTALL_PATH` |
+| 列表为空 | 先在 WE 里订阅；检查 `workshopPath` / `subscriptionsFile`；被订阅清单过滤的数量见列表响应的 `hiddenUnsubscribed` |
+| 同步桌面壁纸不可用 | `config.json` 读不到：修正 `weInstallPath` |
+| 8088 被占用 | 插件自动换端口，主插件自动发现；若你在面板里手填过基地址，改成默认或清空 |
+| 想改端口 / 路径 | 改 profile 的 `cordis.patch.yml` 里 `wallpaper-engine-api` 行的 `config`，重启 DSH；也支持 `WEAPI_PORT` / `WE_INSTALL_PATH` / `WE_WORKSHOP_PATH` / `WE_SUBSCRIPTIONS_FILE` 环境变量 |
+
+配置示例：
+
+```yaml
+- id: wallpaper-engine-api
+  name: dsh-wallpaper-engine-api
+  config:
+    port: 8088
+    weInstallPath: D:\Steam\steamapps\common\wallpaper_engine
+    workshopPath: D:\Steam\steamapps\workshop\content\431960
+    autoPort: true
+```
+
+> 旧服务与配套插件可以共存：配套插件发现 8088 上已有 WE API 时会直接复用（`status: "external"`），不会重复监听。想彻底切换，先运行旧目录的 `取消开机自启.bat` 并结束旧进程，再重启 DSH。
+
+### 4.1 以下为旧手动服务（`wallpaper-engine-api/`）的排障
 
 前提：**Windows + 本机 Wallpaper Engine + PATH 里有 Node.js**。服务是**独立的 Node 进程**，桌面端自带的运行时管不到它；`wallpaper-engine-api/` 只随**仓库**提供，不在 npm 包里。
 
@@ -375,7 +425,7 @@ profile "desktop" is managed exclusively by the Electron application
 
 如果本次页面会话里**成功加载过一次**列表，之后服务挂掉，面板会在列表上方显示红色横幅：
 
-> ⚠ 连不上 WE API 服务（`<基地址>`）——下方列表是上次的缓存，可能已过期。双击 `wallpaper-engine-api\重启服务(管理员).bat` 后点「刷新」即可恢复；想以后重启电脑 / 关掉窗口都不用管，双击同目录的 `设置开机自启.bat`。注意：别在 DSH 客户端内部（终端 / 工具）启动服务——那样起的进程会随客户端退出一起结束；请在资源管理器里双击脚本。
+> ⚠ 连不上 WE API 服务（`<基地址>`）——下方列表是上次的缓存，可能已过期。装过 dsh-wallpaper-engine-api 插件的话，先打开 `/dsh-wallpaper-engine-api/status` 看 base / error，再点「刷新」；还没装的话，在「设置 → 插件」里安装 dsh-wallpaper-engine-api（或 `dsh plugin --profile <profile> add dsh-wallpaper-engine-api`）后重启 DSH。
 
 「壁纸库为空。」或「当前筛选条件下没有壁纸」则是另外两种情况：前者是服务正常但没有可用壁纸（检查 WE 是否装了壁纸、订阅目录是否对），后者把「类型 / 分级」筛选切回「全部」。
 

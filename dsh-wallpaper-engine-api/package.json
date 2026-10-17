@@ -1,0 +1,61 @@
+{
+  "name": "dsh-wallpaper-engine-api",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness (Cordis) 插件：在本机以只读 HTTP API 提供 Wallpaper Engine 壁纸库，供 dsh-wallpaper-bg 的「WE 壁纸库」来源使用。一条命令装好即用，不再需要 clone 仓库、npm install、.bat 脚本或开机自启。",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "icon": "./icon.svg",
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "files": [
+    "index.js",
+    "lib/",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "README.zh.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "cordis",
+    "plugin",
+    "wallpaper",
+    "wallpaper-engine",
+    "wallpaper-engine-api",
+    "windows",
+    "steam",
+    "workshop"
+  ],
+  "license": "MIT",
+  "author": "nishuoyang",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nishuoyang/dsh-wallpaper-bg.git",
+    "directory": "dsh-wallpaper-engine-api"
+  },
+  "homepage": "https://github.com/nishuoyang/dsh-wallpaper-bg/tree/main/dsh-wallpaper-engine-api#readme",
+  "bugs": {
+    "url": "https://github.com/nishuoyang/dsh-wallpaper-bg/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node test/run.mjs",
+    "verify": "node test/run.mjs",
+    "pack:check": "npm pack --dry-run"
+  }
+}

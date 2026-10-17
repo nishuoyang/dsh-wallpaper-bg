@@ -1,31 +1,90 @@
 # WE 壁纸库服务（Windows）
 
-> 适用版本：插件 0.5.13 / `wallpaper-engine-api` 服务 0.5.1。本页是「WE 壁纸库」这个**可选**来源的全部准备与运维细节。不需要它的话，内置壁纸与自定义上传都不受影响。
+> 适用版本：主插件 **0.5.14**、配套插件 **dsh-wallpaper-engine-api 0.1.0**；旧的手动服务仍为 `wallpaper-engine-api` **0.5.1**。本页是「WE 壁纸库」这个**可选**来源的全部准备与运维细节。不需要它的话，内置壁纸与自定义上传都不受影响。
 
-- [它是什么，在哪里](#它是什么在哪里)
-- [准备步骤](#准备步骤)
-- [服务与 DSH 客户端的生命周期](#服务与-dsh-客户端的生命周期)
-- [首次运行 vs 后台启动](#首次运行-vs-后台启动)
-- [日志](#日志)
-- [重启不等于升级](#重启不等于升级)
-- [非交互 / 无人值守配置](#非交互--无人值守配置)
+- [它是什么](#它是什么)
+- [方式 A：配套插件（推荐，一条命令）](#方式-a配套插件推荐一条命令)
+- [配置插件（可选）](#配置插件可选)
+- [端口、生命周期与自动发现](#端口生命周期与自动发现)
+- [方式 B：旧的手动服务（仅保留给已有部署）](#方式-b旧的手动服务仅保留给已有部署)
 - [服务接口与能力标记](#服务接口与能力标记)
 - [验证](#验证)
+- [故障排查](#故障排查)
 
-## 它是什么，在哪里
+## 它是什么
 
-`wallpaper-engine-api/` 服务把 Wallpaper Engine 已安装壁纸列表以只读 HTTP API 暴露在 `127.0.0.1:8088`。
+「WE 壁纸库」来源需要一台本机服务，把 Wallpaper Engine 已安装壁纸以**只读** HTTP API 暴露在 `127.0.0.1`。从 0.5.14 起有两种装法：
 
-> 该服务只随**仓库**提供，不在 npm 包里（npm tarball 只含插件本体，不含 `wallpaper-engine-api/`）。从 npm 安装、又想要「WE 壁纸库」来源的用户，请执行 `git clone https://github.com/nishuoyang/dsh-wallpaper-bg`。插件面板的「WE 壁纸库」标签在连不上服务时也会给出同样的提示。
+| | 方式 A：配套插件（推荐） | 方式 B：旧手动服务 |
+| --- | --- | --- |
+| 安装 | `dsh plugin … add dsh-wallpaper-engine-api` / 插件页面填包名 | clone 仓库 + `npm install` + 双击 `.bat` + 开机自启 |
+| 进程 | DSH 宿主进程内，随 DSH 启停 | 独立 Node 进程，需要自己管 |
+| Node.js | 不需要 | PATH 里必须有 |
+| 升级 | 重新 `dsh plugin … add dsh-wallpaper-engine-api@<版本>` | `git pull` + `npm install` + 重启服务 |
+| 路径探测 | 注册表 + `libraryfolders.vdf`（第二个 Steam 库）+ 常见目录 | 注册表 + 常见目录 |
+| 端口冲突 | 复用已有 WE API，或自动换端口并被主插件发现 | 8088 被占用就起不来 |
 
-服务是独立的 Node 进程，**DSH 自带的 Node 运行时管不到它**。
+新用户请直接用方式 A；方式 B 只保留给已经部署了旧服务、暂时不想改的用户。
 
-## 准备步骤
+## 方式 A：配套插件（推荐，一条命令）
 
-按这个顺序准备：
+前提：**Windows + 本机已安装 Wallpaper Engine**；主插件 `dsh-wallpaper-bg` 已安装（界面在它那边）。
 
-1. **Windows + 本机已安装 Wallpaper Engine。** 服务只读取 WE 自己的文件，所以 WE 必须事先装好；找不到可用的 WE 安装，进程会以退出码 1 结束。它只查注册表里的 Steam 路径和几个常见 Steam 目录，因此装在**第二个 Steam 库**里的 WE（例如 `D:\SteamLibrary\steamapps\common\wallpaper_engine`）**不会被自动探测到**——第 5 步可以在向导里手动粘贴路径。
-2. **PATH 里有 Node.js**（`node -v` 能跑）——系统级安装，和桌面端自带的运行时是两回事。没有它，`启动服务.bat` 会直接停在 `[ERROR] Node.js not found in PATH.`。
+```bash
+# 网页版 / 命令行
+dsh plugin --profile web add dsh-wallpaper-engine-api
+
+# 桌面端（也可在 设置 → 插件 里输入包名）
+dsh plugin --profile desktop add dsh-wallpaper-engine-api
+```
+
+装好后重启 DSH。插件会在 DSH 宿主进程内启动只读服务：
+
+- 默认监听 `http://127.0.0.1:8088`；
+- 自动读取注册表 Steam 路径与 `steamapps/libraryfolders.vdf`，所以装在第二个 Steam 库里的 WE 也能找到；
+- 找不到 WE、找不到壁纸库、端口冲突都**不会**让 DSH 启动失败，原因写在 `/health` 与同源状态路由里；
+- 服务随 DSH 退出而释放，没有后台残留，也没有开机自启项。
+
+配套插件的完整说明见 [`dsh-wallpaper-engine-api/README.zh.md`](../dsh-wallpaper-engine-api/README.zh.md)。
+
+### 配置插件（可选）
+
+默认零配置。只有自动探测失败或端口冲突时才需要覆盖 profile 里的插件行（桌面端文件：`%DSH_HOME%\profiles\desktop\cordis.patch.yml`）：
+
+```yaml
+- id: wallpaper-engine-api
+  name: dsh-wallpaper-engine-api
+  config:
+    port: 8088
+    # 可选：WE 装在自动探测不到的位置时手填
+    weInstallPath: D:\Steam\steamapps\common\wallpaper_engine
+    workshopPath: D:\Steam\steamapps\workshop\content\431960
+    subscriptionsFile: D:\Steam\userdata\1588688173\ugc\431960_subscriptions.vdf
+    autoPort: true
+    verbose: false
+```
+
+环境变量（优先级低于行配置）：`WEAPI_PORT`、`WE_INSTALL_PATH`、`WE_WORKSHOP_PATH`、`WE_SUBSCRIPTIONS_FILE`。
+
+修改宿主半配置后需要重启 DSH 才生效。
+
+## 端口、生命周期与自动发现
+
+- 只绑定 `127.0.0.1`，不对外网开放；
+- 默认 `8088`。如果该端口上已经有**旧的 WE API 服务**，插件直接复用它（`/health` 里 `status: "external"`、`external: true`），不会抢端口、也不会起第二份；
+- 如果被**无关程序**占用，插件自动尝试 `8089`，再不行让系统分配空闲端口（`autoPort: false` 可关闭自动换端口）；
+- 实际端口通过同源路由 `GET <DSH 地址>/dsh-wallpaper-engine-api/status` 的 `base` 字段公布；主插件 `dsh-wallpaper-bg` 会自动发现它，所以**用户不需要手改基地址**；
+- 只有你在主插件面板里**手动填过**基地址时，主插件才会尊重手填值、不做自动发现；
+- 服务属于 DSH 宿主进程：DSH 退出 / 重启即停，不存在「窗口关了服务还在 / 一退客户端服务就没了」的问题。
+
+## 方式 B：旧的手动服务（仅保留给已有部署）
+
+> 新用户不建议再用这一节。以下步骤只适用于已经在用 `wallpaper-engine-api/` 目录的用户。
+
+### 准备步骤
+
+1. **Windows + 本机已安装 Wallpaper Engine**。服务只查注册表里的 Steam 路径和几个常见 Steam 目录；装在**第二个 Steam 库**里的 WE 不会被自动探测到——首次运行向导里可以手动粘贴路径。
+2. **PATH 里有 Node.js**（`node -v` 能跑）——系统级安装，和桌面端自带的运行时是两回事。
 3. **clone 仓库**（服务不在 npm 包里）：
 
    ```bash
@@ -39,68 +98,83 @@
    npm install
    ```
 
-   若失败（例如 `EALLOWREMOTE`，或网络到不了锁文件里指向的镜像），第 5 步的启动脚本会走同样的兜底步骤：**三步引导**——`npm install` → `npm install --allow-remote=all`（放行锁文件指向的镜像）→ `npm install --no-package-lock`（忽略锁文件，改用你自己配置的源）。手工安装时按同样顺序执行即可。
+   若失败（例如 `EALLOWREMOTE`，或网络到不了锁文件里指向的镜像），第 5 步的启动脚本会走同样的兜底步骤：**三步引导**——`npm install` → `npm install --allow-remote=all`（放行锁文件指向的镜像）→ `npm install --no-package-lock`（忽略锁文件，改用你自己配置的源）。
+5. **双击 `启动服务.bat`**——首次运行的入口。它先查端口与 Node.js、缺依赖就补装；`we-api.config` 不存在时依次询问 WE 安装路径与订阅壁纸库目录。之后随时可以用 `启动服务.bat /setup` 重跑向导。
+6. **推荐：双击 `设置开机自启.bat`**，把静默启动脚本注册到注册表（`HKCU\...\Run`）。不设的话，服务只活在「启动它的那个窗口」存续期间。
 
-   > 仓库里的锁文件把 `resolved` 固定在镜像 `registry.npmmirror.com` 上。npm 12 起默认 `allow-remote=none`，会拒绝主机与当前配置源不一致的 tarball（`EALLOWREMOTE: Fetching packages of type "remote" have been disabled`）；网络到不了该镜像时同样一直取不到包。
-5. **双击 `启动服务.bat`**——首次运行的入口。它先查端口与 Node.js、缺依赖就补装；`we-api.config` 不存在时依次询问 WE 安装路径（探测到就直接回车确认；也可以粘贴 `wallpaper64.exe`、它所在的目录，或你的 Steam 目录）与订阅壁纸库目录（直接回车用推导出的默认值 `...\steamapps\workshop\content\431960`）。写入 `we-api.config` 后脚本会在当前窗口里启动服务，`Ctrl+C` 或关闭窗口即停止。之后随时可以用 `启动服务.bat /setup` 重跑向导。
-6. **推荐：双击 `设置开机自启.bat`**，把静默启动脚本注册到注册表（`HKCU\...\Run`），登录 Windows 时后台自动启动。不设的话，服务只活在「启动它的那个窗口」存续期间——重启电脑、或随手关掉 `启动服务.bat` 的窗口，它就不在了，WE 页签会提示连不上服务（列表还会标注可能已过期），直到你再启动一次。取消请双击 `取消开机自启.bat`（两个脚本都直接引用本目录的 `启动服务-静默.vbs`，移动过目录后请重新设置一次）。
+### 生命周期与日志
 
-   > **两个脚本都会读写「启动应用」里的状态记录**（`HKCU\...\Explorer\StartupApproved\Run`）：任务管理器 /「设置 → 应用 → 启动」里的「禁用」并不删除 `Run` 值、只把这个状态改成「已禁用」，所以 `设置开机自启.bat` 会把它归一到「已启用」（不归一的话脚本会报成功、而登录时启动项仍被跳过），`取消开机自启.bat` 则把它连同 `Run` 值一起清掉（只留状态会让注册表看起来「还设着」，事后极难判断）。
+旧服务是**独立 Node 进程**，正常启动后**不随 DSH 客户端退出而结束**。唯一会「一退客户端就没」的情况，是从**客户端内部**启动它——在 DSH 的终端 / 工具里跑脚本时，进程会落在客户端的 Job Object 里，客户端一退出就被一起结束。请从资源管理器双击脚本，或交给开机自启项。
 
-## 服务与 DSH 客户端的生命周期
-
-WE API 服务是独立的 Node 进程，正常启动后**不随 DSH 客户端退出而结束**：退出 / 重进客户端、重载窗口都不影响它，它只在 Windows 注销 / 关机时结束（下次登录由开机自启项拉起）。
-
-唯一会「一退客户端就没」的情况，是从**客户端内部**启动它——在 DSH 的终端 / 工具里跑 `启动服务.bat`、`启动服务-静默.vbs` 或 `node server.js`，进程会落在客户端的进程树里（DSH 用带 `KILL_ON_JOB_CLOSE` 的 Job Object 管理这些进程），客户端一退出就被一起结束，而且 `we-api.log` 里**不会留下任何报错**，界面上只表现为「连不上服务」。所以启动请在**资源管理器里双击**脚本（这样它的父进程是 `explorer.exe`），或干脆交给开机自启项；怀疑服务没了时，先看 `http://127.0.0.1:8088/health` 还在不在。
-
-## 首次运行 vs 后台启动
-
-`we-api.config` 生成之后，`启动服务-静默.vbs` 才会无窗口地把同一个服务跑起来（开机自启项跑的就是它），输出追加到 `we-api.log`。
-
-**首次运行请一律走 `启动服务.bat`**：静默启动没有向导，缺少 `node_modules` 或 `we-api.config` 时会**完全静默地**失败——连窗口都不会有，唯一痕迹是 `we-api.log` 末尾的一段堆栈。双击了却「什么都没发生」，就是这种情况：改用 `启动服务.bat`。
-
-## 日志
-
-都在 `wallpaper-engine-api/` 下，均已 gitignore：
+日志都在 `wallpaper-engine-api/` 下（已 gitignore）：
 
 - `we-api.log`——静默 / 开机自启路径写下的服务输出；
-- `restart-debug.log`——记录 `重启服务(管理员).bat` 做了什么（结束进程的尝试、提权、等待端口）。
+- `restart-debug.log`——`重启服务(管理员).bat` 做了什么的记录。
 
-服务没响应时先看这两个文件。
+### 重启不等于升级
 
-## 重启不等于升级
+`重启服务(管理员).bat` 只结束占用 8088 的进程再重新拉起 `node server.js`，**既不 `git pull` 也不 `npm install`**。升级 = 仓库里 `git pull` + `npm install` + 重启。
 
-`重启服务(管理员).bat` 只做两件事：结束占用 8088 的进程，再通过静默启动器重新拉起 `node server.js`（需要时自动请求管理员权限，随后等待端口就绪）。它**既不 `git pull` 也不 `npm install`**，因此永远拿不到新代码——升级 = 仓库里 `git pull` + `wallpaper-engine-api` 里 `npm install` + 重启。
+### 非交互配置
 
-## 非交互 / 无人值守配置
-
-`we-api.config` 就是 `server.js` 同目录下的纯 `KEY=value` 文件，向导只写两个键，自己写好就完全不用交互：
+`we-api.config` 是 `server.js` 同目录下的纯 `KEY=value` 文件：
 
 ```ini
 WE_INSTALL_PATH=D:\Steam\steamapps\common\wallpaper_engine
 WE_WORKSHOP_PATH=D:\Steam\steamapps\workshop\content\431960
 ```
 
-也可以直接在 `wallpaper-engine-api/` 里 `node server.js`——向导只是套在它外面的一层便利。同样的配置还支持环境变量，且优先级高于 `we-api.config`：`WE_INSTALL_PATH`、`WE_WORKSHOP_PATH`、`WE_SUBSCRIPTIONS_FILE`（显式指定 `431960_subscriptions.vdf`）与 `WEAPI_PORT`。
+也支持环境变量，且优先级高于 `we-api.config`：`WE_INSTALL_PATH`、`WE_WORKSHOP_PATH`、`WE_SUBSCRIPTIONS_FILE`、`WEAPI_PORT`。
 
-> `WEAPI_PORT` 只改**服务自己**的端口：启动脚本把 8088 写死了（`启动服务.bat` 检测到 8088 被占用就拒绝启动，`重启服务(管理员).bat` 也只结束 / 等待 8088），换端口必须同时改这两个脚本，并把插件设置里的基地址改成一致。
+> `WEAPI_PORT` 只改服务自己的端口；`启动服务.bat` 与 `重启服务(管理员).bat` 把 8088 写死了，换端口要同时改脚本与主插件里的基地址。用配套插件则没有这个问题。
+
+### 旧服务与配套插件共存
+
+如果旧的 WE API 服务已经在 8088 上跑着，再装配套插件：插件会识别出这是已知的 WE API 并直接复用（`external: true`），不会重复监听。想彻底切到插件：运行旧目录的 `取消开机自启.bat`、结束旧进程，然后重启 DSH。
 
 ## 服务接口与能力标记
 
-服务**只读**：仅调用列表 / 当前壁纸查询，绝不触碰设置或播放接口；未检测到 WE 运行时也不会拉起 WE 主程序。列表按 Steam 真实订阅清单（`431960_subscriptions.vdf`）过滤——在 WE 里退订 / 本地禁用的壁纸即使文件夹残留也不会再出现，与 WE 界面一致。
+两种方式提供同一套只读端点（默认基地址 `http://127.0.0.1:8088`）：
 
-**0.5.0 起服务回归纯只读的列表 / 文件服务**：`/health`、`/api/wallpapers`、`/api/current`、`/files/<id>/...`。0.4.x 的桌面画面捕获 `GET /capture?w=&q=`（`PrintWindow(Progman, …)` 采样桌面 + `koffi` / `jpeg-js`）与 0.3.x 的本地场景渲染器（`/scene-frame`、`/scene-anim`、`lib/we-renderer/`）一样已**整体移除**——旧端点一律返回 `404`，`/health` 不再上报 `desktopCapture`。现在返回 `"version": "0.5.1"`，以及能力标记 `"webShim": 1` 与 0.5.1 起的 `"monitorSelect": 1`（当前壁纸支持指定显示器），另有 `weInstallPath` / `workshopPath` / `subscriptionsFile` / `weRunning`。
+| 端点 | 作用 |
+| --- | --- |
+| `GET /health`、`/` | 服务状态（`webShim` / `monitorSelect` 能力标记、WE 路径、`weRunning`） |
+| `GET /api/wallpapers`（含 `/wallpapers` 等别名） | 已安装壁纸列表，按 Steam 真实订阅清单过滤 |
+| `GET /api/current[?monitor=]`（含 `/current` 等别名） | 当前桌面壁纸；`monitor` 可指定 `MonitorN` / `N`，缺省自动判定 |
+| `GET /files/<id>/<rel>` | 网页类壁纸目录文件；HTML 注入 WE 私有接口垫片，支持 ETag / Range |
 
-服务不解析 `scene.pkg`、不生成帧 / 视频、不采样桌面、不创建 `~/.dsh-wallpaper-bg`；场景壁纸由插件端显示 WE 工坊预览图（`preview.gif` / `preview.jpg`）。
+服务**只读**：仅调用列表 / 当前壁纸查询，绝不触碰设置或播放接口；未检测到 WE 运行时也不会拉起 WE 主程序。不解析 `scene.pkg`、不生成帧 / 视频、不采样桌面、不创建 `~/.dsh-wallpaper-bg`。
 
-网页类壁纸的静态资源由 `/files` 路由只读提供（仅限已订阅壁纸目录），0.3.8 起改为流式发送 + `ETag` / `Last-Modified` 条件请求（HTML `no-cache`、静态资源 300 秒缓存）并支持 `Range`，切换壁纸时资源不再反复重下。
+配套插件还提供同源状态路由（只在 DSH 页面 origin 上）：
+
+```text
+GET <DSH 地址>/dsh-wallpaper-engine-api/status
+→ { ok, status, base, port, external, weInstallPath, workshopPath, weRunning, error, ... }
+```
 
 ## 验证
 
-浏览器打开 `http://127.0.0.1:8088/health` 返回 JSON 即 WE 服务正常（历史原因端口是 8088——8080 曾被 Jenkins 占用）。插件侧则看 `<DSH 地址>/dsh-wallpaper-bg/health`：`dsh web` 默认端口 3080，桌面端固定 19387。
+1. **插件是否挂载**：打开 `<DSH 地址>/dsh-wallpaper-engine-api/status`，应返回 JSON；`base` 是实际 API 地址。
+2. **服务是否健康**：打开 `<base>/health`（通常是 `http://127.0.0.1:8088/health`），应看到 `"mode": "readonly"`、`"webShim": 1`、`"monitorSelect": 1`、非空的 `weInstallPath` / `workshopPath`。
+3. **主插件是否挂载**：`<DSH 地址>/dsh-wallpaper-bg/health` 返回 `{"ok":true,…,"discoverWeApi":1}`（旧宿主半没有 `discoverWeApi`，需要重启 DSH 升级）。
+4. **面板**：设置 → 壁纸 → WE 壁纸库，能列出壁纸；「同步桌面壁纸」可用。
 
-WE 壁纸库报错时，先确认服务在 8088 端口运行、且插件设置里的基地址与其一致。
+`dsh web` 默认端口 3080，桌面端固定 19387（以你实际打开的地址为准）。
+
+## 故障排查
+
+| 现象 | 原因 / 处理 |
+| --- | --- |
+| `/status` 404 | 配套插件没装进当前 profile，或装完没重启 DSH；确认 `profiles/<name>/package.json` 的 `dsh.profile.bundles` 里有 `dsh-wallpaper-engine-api` |
+| `error` 说找不到 Wallpaper Engine | 在插件行配置 `weInstallPath`（含 `wallpaper64.exe` 的目录）或设 `WE_INSTALL_PATH`，重启 DSH |
+| 列表为空但 WE 里有壁纸 | 先在 WE 里订阅；检查 `workshopPath` / `subscriptionsFile`；列表按订阅清单过滤，已退订 / 本地禁用的不会出现（`hiddenUnsubscribed` 显示被过滤数量） |
+| 同步桌面壁纸不可用 | `/health` 的 `error` 会说明是 `config.json` 读不到还是安装目录不对；修正 `weInstallPath` |
+| 8088 被占用 | 配套插件自动换端口并由主插件发现；若你在主插件里手填过基地址，改成默认或清空。旧服务则只能改端口并同步改脚本 / 基地址 |
+| 装了插件但主插件仍连 8088 | 确认主插件宿主半是 0.5.14+（`/dsh-wallpaper-bg/health` 有 `discoverWeApi: 1`），并重启 DSH |
+| 桌面端插件页面显示「启用但未激活」 | 看安装结果的 diagnostic；模块导入错误（例如版本不匹配）需要修正包后重启 DSH |
+
+日志：配套插件默认不写文件，诊断信息走 DSH 宿主日志（`verbose: true` 可打开详细日志）；旧服务的日志见上文。
 
 ---
 
-相关：[安装与升级](installation.md) · [设置与用法](configuration.md) · [故障排查手册](troubleshooting.md)
+相关：[安装与升级](installation.md) · [设置与用法](configuration.md) · [故障排查手册](troubleshooting.md) · [配套插件 README](../dsh-wallpaper-engine-api/README.zh.md)

@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Wallpaper Engine Library API",
+    "description": "Serves installed Wallpaper Engine wallpapers as a read-only local HTTP API for the WE library source in dsh-wallpaper-bg. One-command install: no repository clone, npm install, .bat launcher, or login autostart; the server follows the DSH lifecycle and never changes your desktop wallpaper."
+  }
+}

@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-> v0.5.13 · MIT License
+> v0.5.14 · MIT License
 
 [![npm version](https://img.shields.io/npm/v/dsh-wallpaper-bg?label=npm&color=cb3837)](https://www.npmjs.com/package/dsh-wallpaper-bg)
 [![npm downloads](https://img.shields.io/npm/dm/dsh-wallpaper-bg?label=downloads)](https://www.npmjs.com/package/dsh-wallpaper-bg)
@@ -19,7 +19,7 @@ A static two-half plugin that puts an **independent animated wallpaper layer** u
 
 ## Features
 
-- **Three wallpaper sources**: 10 built-in high-res Unsplash images; custom uploads (images / videos, stored in IndexedDB); and read-only access to your locally installed **Wallpaper Engine** library (default `http://127.0.0.1:8088`), filtered by the real Steam subscription list.
+- **Three wallpaper sources**: 10 built-in high-res Unsplash images; custom uploads (images / videos, stored in IndexedDB); and read-only access to your locally installed **Wallpaper Engine** library (the companion [`dsh-wallpaper-engine-api`](https://github.com/nishuoyang/dsh-wallpaper-bg/tree/main/dsh-wallpaper-engine-api#readme) plugin serves the API and the main plugin discovers its port), filtered by the real Steam subscription list.
 - **Playback queue** per source: drag wallpapers into the queue and loop-play them at 1–10 minutes per item, with drag-to-reorder, click-to-jump and localStorage persistence. The queue is sticky at the top of its tab.
 - **Four render modes**: static images (cover-fit), videos (`<video object-fit: cover>`, GPU compositing), scene wallpapers (WE's own workshop preview `preview.gif` / `preview.jpg`), and web wallpapers (native iframe rendering of `index.html`).
 - **Four adjustments**: light fog / dark overlay (auto-switching with the DSH theme), background blur (0–20px), background brightness (50–150%), safe zoom (0–10% to crop edge letterboxing).
@@ -36,7 +36,7 @@ Full option-by-option reference: [Configuration](docs/configuration.md).
 
 - **DeepSeek Harness desktop app (0.2 preview or later)** — the app bundles its own Node.js / pnpm runtime, so nothing else is needed;
 - **or a CLI install** (`dsh web`) with Node.js ≥ 20 (`node -v`) and a working DeepSeek Harness;
-- the optional WE library source adds its own requirements (Windows, a local Wallpaper Engine install and Node.js on PATH) — see [WE library service](docs/we-library-service.md).
+- the optional WE library source adds its own requirements (Windows, a local Wallpaper Engine install, and the `dsh-wallpaper-engine-api` companion plugin — one command, no clone / `npm install` / `.bat` / autostart) — see [WE library service](docs/we-library-service.md).
 
 ### Desktop app (no command line)
 
@@ -58,13 +58,24 @@ dsh plugin --profile web add dsh-wallpaper-bg
 
 From a checkout, link the repo instead: `dsh plugin --profile web add link:<absolute-path-to-repo>` (or `--profile desktop`).
 
+### Optional: WE library source (one command)
+
+To use the **WE 壁纸库** tab, install the companion plugin too (Windows + a local Wallpaper Engine install):
+
+```bash
+dsh plugin --profile web add dsh-wallpaper-engine-api      # dsh web
+dsh plugin --profile desktop add dsh-wallpaper-engine-api  # desktop app (or type the package name in Settings → Plugins)
+```
+
+It serves a read-only WE API on `127.0.0.1:8088` and follows the DSH lifecycle; the main plugin discovers the actual port through a same-origin status route. No repository clone, `npm install`, `.bat` launcher, or login autostart. The old `wallpaper-engine-api/` folder stays for manual installs; new users just install the plugin.
+
 ### Upgrading
 
 `dsh plugin … add` forwards to `pnpm add`, which keeps the range already recorded in the manifest — re-running the install command on an existing install changes nothing. Ask for a version explicitly:
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg@latest    # move to the newest release
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.13     # or pin an exact version
+dsh plugin --profile web add dsh-wallpaper-bg@0.5.14     # or pin an exact version
 ```
 
 > pnpm 11 installs a release only after it is a day old (24 h `minimumReleaseAge`), so a just-published version resolves to the previous one for roughly a day. Name the exact version to take it immediately.
@@ -77,7 +88,10 @@ Install, upgrade, local development and profile details: [Installation guide](do
 # 1. install into a profile
 dsh plugin --profile web add dsh-wallpaper-bg
 
-# 2. start DSH (desktop app: just open it)
+# 2. (optional) enable the WE library source
+dsh plugin --profile web add dsh-wallpaper-engine-api
+
+# 3. start DSH (desktop app: just open it)
 dsh web
 ```
 
@@ -101,12 +115,12 @@ http://127.0.0.1:19387/dsh-wallpaper-bg/health    # desktop app (fixed port 1938
 | --- | --- |
 | Install, upgrade, local development | [docs/installation.md](docs/installation.md) |
 | Every setting, queue and filter | [docs/configuration.md](docs/configuration.md) |
-| Optional Wallpaper Engine library service | [docs/we-library-service.md](docs/we-library-service.md) |
+| Optional WE library plugin `dsh-wallpaper-engine-api` | [docs/we-library-service.md](docs/we-library-service.md) · [plugin README](https://github.com/nishuoyang/dsh-wallpaper-bg/tree/main/dsh-wallpaper-engine-api#readme) |
 | Symptom → cause → fix | [docs/troubleshooting.md](docs/troubleshooting.md) |
 | How the two halves work | [docs/architecture.md](docs/architecture.md) |
 | Releasing (`scripts/release.ps1`) and CI workflows | [docs/releasing.md](docs/releasing.md) |
 
-How it works, in one line: a DSH **static two-half plugin** — `lib/host.js` registers same-origin routes (`/dsh-wallpaper-bg/asset`, `/dsh-wallpaper-bg/we`, `/dsh-wallpaper-bg/health`), `lib/client.js` is a hand-written single-file browser bundle that injects the background layer and the 壁纸 settings tab, and `cordis.patch.yml` inserts the plugin row into the profile composition's host plane. Detail: [Architecture](docs/architecture.md).
+How it works, in one line: a DSH **static two-half plugin** — `lib/host.js` registers same-origin routes (`/dsh-wallpaper-bg/asset`, `/dsh-wallpaper-bg/we`, `/dsh-wallpaper-bg/health`, and auto-discovers the `dsh-wallpaper-engine-api` plugin's actual port), `lib/client.js` is a hand-written single-file browser bundle that injects the background layer and the 壁纸 settings tab, and `cordis.patch.yml` inserts the plugin row into the profile composition's host plane. Detail: [Architecture](docs/architecture.md).
 
 ## License
 

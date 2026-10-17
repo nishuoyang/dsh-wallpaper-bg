@@ -1,0 +1,20 @@
+# dsh-wallpaper-engine-api — profile bundle patch layer
+# ======================================================
+# 由 dsh.bundle.patch 声明，经 `dsh plugin --profile <name> add dsh-wallpaper-engine-api`
+# （或桌面端「设置 → 插件」输入包名）安装后作为 profile 组合层之一被应用。
+#
+# 该行处于 host 平面：DSH 启动时在本机 127.0.0.1:8088 打开只读 WE API 服务，
+# dsh-wallpaper-bg 的「WE 壁纸库」来源随即可用 —— 不再需要独立 Node 进程、
+# wallpaper-engine-api 目录、启动 .bat 或开机自启项。
+#
+# 可选配置（不写就用默认值 / 自动探测）：
+#   port              监听端口，默认 8088；被占用时自动改用下一个空闲端口，
+#                     dsh-wallpaper-bg 会通过同源状态路由发现实际端口
+#   weInstallPath     Wallpaper Engine 安装目录（含 wallpaper64.exe）
+#   workshopPath      创意工坊壁纸库目录（通常 ...\steamapps\workshop\content\431960）
+#   subscriptionsFile 显式指定 431960_subscriptions.vdf
+#   autoPort          端口被非 WE API 程序占用时是否自动换端口（默认 true）
+#   verbose           是否把诊断信息写进宿主日志（默认 false）
+- insert:
+    - id: wallpaper-engine-api
+      name: dsh-wallpaper-engine-api

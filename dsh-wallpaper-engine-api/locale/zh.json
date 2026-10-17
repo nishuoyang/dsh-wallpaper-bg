@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Wallpaper Engine 壁纸库 API",
+    "description": "在本机以只读 HTTP API 提供 Wallpaper Engine 已安装壁纸，供 dsh-wallpaper-bg 的「WE 壁纸库」来源使用。一条命令装好即用：不需要 clone 仓库、npm install、启动 .bat，也不需要开机自启；服务随 DSH 启停，不修改桌面壁纸。"
+  }
+}

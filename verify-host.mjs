@@ -5,6 +5,7 @@
 // 用法：node verify-host.mjs
 //       WEAPI_BASE=http://127.0.0.1:8099 node verify-host.mjs
 import { Writable } from 'node:stream'
+import { createServer } from 'node:http'
 import { readFileSync } from 'node:fs'
 import plugin from './lib/host.js'
 
@@ -23,12 +24,26 @@ const ok = (name, cond, extra = '') => {
   }
 }
 
+// ---- 同源发现路由的假宿主：/dsh-wallpaper-engine-api/status 指向真实 WE API ----
+const discoveryServer = createServer((req, res) => {
+  if (String(req.url || '').startsWith('/dsh-wallpaper-engine-api/status')) {
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' })
+    res.end(JSON.stringify({ ok: true, base: WE_BASE, status: 'running', webShim: 1 }))
+    return
+  }
+  res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' })
+  res.end('{"ok":false}')
+})
+await new Promise((resolve) => discoveryServer.listen(0, '127.0.0.1', resolve))
+const discoveryOrigin = 'http://127.0.0.1:' + discoveryServer.address().port
+
 // ---- 最小 ctx：抓住 webServer.register 的路由，effect 立即执行 ----
 // 宿主半按需注入 webServer（ctx.inject：服务缺失时插件照样激活，只是不注册路由），
 // 所以这里也要给一个 inject：服务已在位，直接同步回调。
 let handler = null
 const ctx = {
   webServer: {
+    getOrigin() { return discoveryOrigin },
     register(route) {
       if (route && route.kind === 'prefix' && route.path === '/dsh-wallpaper-bg') handler = route.handler
       return () => {}
@@ -79,6 +94,15 @@ const health = JSON.parse((await call('/dsh-wallpaper-bg/health')).text)
 console.log('host health:', JSON.stringify(health))
 ok(`host version ${PKG_VERSION}`, health.version === PKG_VERSION)
 ok('host monitorForward=1（monitor 会透传）', health.monitorForward === 1)
+ok('host discoverWeApi=1（会做同源发现）', health.discoverWeApi === 1)
+
+// 不传 base → 先走 /dsh-wallpaper-engine-api/status 发现，再打真实 WE API
+const discoveredPing = JSON.parse((await call('/dsh-wallpaper-bg/we?action=ping')).text)
+ok('不传 base 时自动发现 WE API 插件端口', discoveredPing.ok === true && discoveredPing.discovered === true && discoveredPing.weBase === WE_BASE,
+  `weBase=${discoveredPing.weBase} discovered=${discoveredPing.discovered}`)
+// 显式传 base → 尊重用户，不走发现
+const explicitPing = JSON.parse((await call('/dsh-wallpaper-bg/we?action=ping&base=' + encodeURIComponent(WE_BASE))).text)
+ok('显式 base 时不做发现替换', explicitPing.ok === true && explicitPing.discovered !== true && explicitPing.weBase === WE_BASE)
 
 const auto = JSON.parse((await call('/dsh-wallpaper-bg/we?action=current&base=' + encodeURIComponent(WE_BASE))).text)
 console.log('auto current:', JSON.stringify({ monitor: auto.monitor, from: auto.monitorSource, title: auto.current && auto.current.title, kind: auto.current && auto.current.kind }).slice(0, 200))
@@ -115,4 +139,5 @@ const missing = await call('/dsh-wallpaper-bg/asset?path=' + encodeURIComponent(
 ok('/asset 不存在文件 → 404', missing.status === 404)
 
 console.log(`\n${pass} passed, ${fail} failed`)
+await new Promise((resolve) => discoveryServer.close(() => resolve()))
 process.exitCode = fail ? 1 : 0

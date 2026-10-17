@@ -4,6 +4,20 @@
 
 > 发版时把下面的 `## [未发布]` 改成 `## [x.y.z] - YYYY-MM-DD`（`scripts/release.ps1` 要求存在对应版本条目）。
 
+## [0.5.14] - 2026-10-18
+
+### 新增
+
+- **配套插件 `dsh-wallpaper-engine-api`（0.1.0）**：把原来只在仓库里、需要 clone + `npm install` + 双击 `.bat` + 设置开机自启的 `wallpaper-engine-api/` 独立服务，做成一个可以**一条命令安装**的 DSH 插件。它在 DSH 宿主进程内监听 `127.0.0.1:8088`（可配置），随 DSH 启停，不需要 PATH 里的 Node.js，也没有后台残留进程。详见 [`dsh-wallpaper-engine-api/README.zh.md`](https://github.com/nishuoyang/dsh-wallpaper-bg/tree/main/dsh-wallpaper-engine-api#readme)。
+- **主插件自动发现 WE API 插件的端口**（`lib/host.js`）：不传 `base`（面板保持默认地址）时，宿主半先请求同源 `GET /dsh-wallpaper-engine-api/status`，拿到 `base` 再转发；手动填过基地址时尊重手填值。8088 被占用、插件自动换端口时不再需要用户改地址。发现结果缓存 30 秒，找不到时负缓存 15 秒，避免无插件时每个请求都等一次超时。`/dsh-wallpaper-bg/health` 新增 `discoverWeApi: 1` 能力标记。
+- **下游 503 的可操作原因透传**（`lib/host.js`）：以前下游返回 503 只会变成 `HTTP 503`；现在会读响应体里的 `error` 并原样显示（例如「找不到 Wallpaper Engine：…」），面板能直接给出下一步动作。
+
+### 变更
+
+- **WE 页签的安装/排障提示改为插件优先**（`lib/client.js`）：连不上时先引导「设置 → 插件 → 安装 dsh-wallpaper-engine-api」（或一条命令），不再默认让人 clone / `npm install` / 双击 `.bat`；旧的手动服务保留为兜底。发现端口与面板默认地址不同时，状态行会显示「已自动发现实际服务：…」。
+- 文档同步：README / 安装指南 / 架构说明 / 故障排查 / WE 壁纸库服务页都以配套插件为推荐路径，旧手动服务移入「方式 B（仅保留给已有部署）」。
+- 新增 `verify-integration.mjs`：不启动 DSH，直接验证「配套插件端口 → 主插件同源发现 → 列表 / 当前壁纸 / 错误透传」整条链路；`verify-host.mjs` 增加发现与显式 base 的用例。
+
 ## [0.5.13] - 2026-10-13
 
 ### 性能

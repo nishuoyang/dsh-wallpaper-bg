@@ -1,6 +1,6 @@
 # 安装、升级与本地开发
 
-> 适用版本：dsh-wallpaper-bg 0.5.13。本页是 README「安装」章节的完整版：桌面端 / 命令行两种装法、升级机制、本地开发链接方式，以及安装后的验证手段。
+> 适用版本：dsh-wallpaper-bg 0.5.14。本页是 README「安装」章节的完整版：桌面端 / 命令行两种装法、升级机制、本地开发链接方式，以及安装后的验证手段。
 
 - [前提条件](#前提条件)
 - [桌面端安装（无需命令行）](#桌面端安装无需命令行)
@@ -13,7 +13,7 @@
 
 - **DeepSeek Harness 桌面端（0.2 预览版或更新）**——插件本体不需要额外装任何东西：桌面端自带 Node.js / pnpm 运行时，**无需自装 Node**；
 - **或者命令行方式**（`dsh web`）：Node.js ≥ 20（`node -v` 检查）+ 能正常启动的 DeepSeek Harness；
-- 可选的「WE 壁纸库」来源另有前提：Windows + 本机 Wallpaper Engine + **PATH 里有 Node.js**——服务是独立的 Node 进程，桌面端自带的运行时管不到它，详见 [WE 壁纸库服务](we-library-service.md)。
+- 可选的「WE 壁纸库」来源另有前提：Windows + 本机 Wallpaper Engine + 配套插件 `dsh-wallpaper-engine-api`（一条命令，见下）。不再需要 clone 仓库、`npm install`、`.bat` 或开机自启，详见 [WE 壁纸库服务](we-library-service.md)。
 
 ## 桌面端安装（无需命令行）
 
@@ -25,10 +25,13 @@
 
 桌面端会把它装进自己的 `desktop` profile，并在同一个页面里列出（可停用 / 卸载，也能看插件介绍与来源）。桌面端用固定端口（19387）提供该 profile，页面 origin 不会变，所以自定义上传（IndexedDB）和各项设置（localStorage）重启应用后都保留。
 
+想用 **WE 壁纸库**来源的话，在同一个插件页面再装 `dsh-wallpaper-engine-api`（命令行等价：`dsh plugin --profile desktop add dsh-wallpaper-engine-api`）。它随 DSH 启停，不需要单独启动服务或设开机自启。
+
 如果已把桌面端提供的 `dsh` 命令装进 PATH（应用内有该选项），等价命令是：
 
 ```bash
 dsh plugin --profile desktop add dsh-wallpaper-bg
+dsh plugin --profile desktop add dsh-wallpaper-engine-api   # 可选：WE 壁纸库
 ```
 
 > `desktop` profile 归 Electron 应用独占：在终端里启动它会被拒绝（`profile "desktop" is managed exclusively by the Electron application`）。这是**预期行为**——安装 / 卸载请走插件页面（或 `dsh plugin --profile desktop …`，这条是能用的），应用启动时会自己组合并加载插件。本包自带的安装器 `dsh-wallpaper-bg install` 同样会跳过 `desktop` profile（原因相同），并提示改用插件页面。
@@ -37,6 +40,7 @@ dsh plugin --profile desktop add dsh-wallpaper-bg
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg
+dsh plugin --profile web add dsh-wallpaper-engine-api   # 可选：WE 壁纸库
 ```
 
 > 本地开发建议直接链接仓库（两个 profile 都支持 link 形式）：
@@ -50,10 +54,10 @@ dsh plugin --profile web add dsh-wallpaper-bg
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg@latest    # 升到最新发布版
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.13     # 或锁定某个具体版本
+dsh plugin --profile web add dsh-wallpaper-bg@0.5.14     # 或锁定某个具体版本
 ```
 
-> **pnpm 11 只安装「发布满一天」的版本。** pnpm 11 默认开启 24 小时的 `minimumReleaseAge`（供应链保护）：某版本发布后约一天内，`dsh plugin … add dsh-wallpaper-bg` 只会解析到**上一个版本**，并打印 `(0.5.13 is available)`；`@latest` 同样受这个门槛限制。想立刻装上刚发布的版本，可以：写死版本号（`dsh-wallpaper-bg@0.5.13`）、加 `--config.minimumReleaseAge=0`，或在 profile 的 `pnpm-workspace.yaml` 里把本包排除：
+> **pnpm 11 只安装「发布满一天」的版本。** pnpm 11 默认开启 24 小时的 `minimumReleaseAge`（供应链保护）：某版本发布后约一天内，`dsh plugin … add dsh-wallpaper-bg` 只会解析到**上一个版本**，并打印 `(0.5.14 is available)`；`@latest` 同样受这个门槛限制。想立刻装上刚发布的版本，可以：写死版本号（`dsh-wallpaper-bg@0.5.14`）、加 `--config.minimumReleaseAge=0`，或在 profile 的 `pnpm-workspace.yaml` 里把本包排除：
 >
 > ```yaml
 > minimumReleaseAgeExclude:
@@ -65,7 +69,8 @@ dsh plugin --profile web add dsh-wallpaper-bg@0.5.13     # 或锁定某个具体
 ## 安装后验证
 
 - **界面里**：**设置 → 插件** 能看到 `dsh-wallpaper-bg`、**设置 → 壁纸** 能打开面板。
-- **宿主半是否挂载**：浏览器打开 `<DSH 地址>/dsh-wallpaper-bg/health`，返回 JSON 即已挂载——`dsh web` 默认端口 3080（`http://127.0.0.1:3080/dsh-wallpaper-bg/health`），桌面端固定 19387（`http://127.0.0.1:19387/dsh-wallpaper-bg/health`）。
+- **宿主半是否挂载**：浏览器打开 `<DSH 地址>/dsh-wallpaper-bg/health`，返回 JSON 即已挂载——`dsh web` 默认端口 3080（`http://127.0.0.1:3080/dsh-wallpaper-bg/health`），桌面端固定 19387（`http://127.0.0.1:19387/dsh-wallpaper-bg/health`）。0.5.14 起该响应含 `"discoverWeApi": 1`，表示会自动发现 WE API 插件的端口。
+- **WE 壁纸库（可选）**：装了配套插件时，`<DSH 地址>/dsh-wallpaper-engine-api/status` 应返回 JSON，`base` 是实际 WE API 地址；打开它的 `/health` 能看到 `weInstallPath` / `workshopPath`。
 - **是否真的作为组合层加载**：`profiles/<name>/package.json` 的 `dsh.profile.bundles` 里要有 `dsh-wallpaper-bg`——`dsh-wallpaper-bg status` 也会报这一点（在 bundles 里显示 `installed（bundle 层…）`，只装了依赖、没进 bundles 时会明确提示重跑一次 `add`）。这一项由 DSH 安装时自己回填；版本刚发布不久、注册表还在传播时偶尔会漏写，重跑 `dsh plugin --profile web add dsh-wallpaper-bg@<版本>` 即可补上。
 
 装进 `headless` / `tui` / 自建 profile 是可以的，而且无害：插件只在宿主的 `webServer` 服务存在时才注册路由，没有 Web 界面的 profile 会照常启动、插件静默不生效（这个修复之前，这类 profile 会直接以 `1 entry did not activate` 启动失败）。不过装在那种 profile 里没有意义——壁纸界面在浏览器页面里——请装进 `web`，或桌面端的 `desktop` profile。

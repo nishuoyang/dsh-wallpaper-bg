@@ -1,5 +1,8 @@
-// 重建后的 WE API 服务验收：列表字段 / 当前壁纸的显示器判定 / 网页文件路由
-// （ETag·Range·垫片·Referer 兜底），以及「已移除」的端点（/scene-frame、/scene-anim、/capture 一律 404）
+// 旧版独立 WE API 服务（wallpaper-engine-api/server.js）的验收：列表字段 / 当前壁纸的显示器判定 /
+// 网页文件路由（ETag·Range·垫片·Referer 兜底），以及「已移除」的端点（/scene-frame、/scene-anim、/capture 一律 404）。
+//
+// 注意：0.5.14 起推荐用配套插件 dsh-wallpaper-engine-api；它的等价验收在
+// dsh-wallpaper-engine-api/test/run.mjs（离线 fixture，npm test），不需要启动任何独立服务。
 //
 // 用法：node verify-service.mjs                       （默认 127.0.0.1:8088）
 //       WEAPI_BASE=http://127.0.0.1:8099 node verify-service.mjs
