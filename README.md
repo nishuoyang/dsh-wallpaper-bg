@@ -7,6 +7,7 @@
 [![GitHub release](https://img.shields.io/github/v/release/nishuoyang/dsh-wallpaper-bg?label=release)](https://github.com/nishuoyang/dsh-wallpaper-bg/releases)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Listed on dsh-plugin.org](https://dsh-plugin.org/badges/listed.svg)](https://dsh-plugin.org/plugins/nishuoyang/dsh-wallpaper-bg)
+[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
 
 English | [中文](README.zh.md)
 
