@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-> v0.5.15 · MIT License
+> v0.5.16 · MIT License
 
 [![npm version](https://img.shields.io/npm/v/dsh-wallpaper-bg?label=npm&color=cb3837)](https://www.npmjs.com/package/dsh-wallpaper-bg)
 [![npm downloads](https://img.shields.io/npm/dm/dsh-wallpaper-bg?label=downloads)](https://www.npmjs.com/package/dsh-wallpaper-bg)
@@ -76,7 +76,7 @@ dsh plugin --profile desktop add dsh-wallpaper-engine-api  # 桌面端（或在 
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg@latest    # 升到最新发布版
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.15     # 或锁定某个具体版本
+dsh plugin --profile web add dsh-wallpaper-bg@0.5.16     # 或锁定某个具体版本
 ```
 
 > pnpm 11 只安装「发布满一天」的版本（默认 24 小时 `minimumReleaseAge`），刚发布的版本约一天内只会解析到上一个版本；写死版本号即可立刻装上。
