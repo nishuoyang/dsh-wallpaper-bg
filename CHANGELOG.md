@@ -15,6 +15,7 @@
   - **可回退**：设置 → **通用设置 → 外观 → 主题配色**新增「蓝粉 / 经典」；经典档的两色变量退回 `--dsw-alias-brand-primary`，渐变自动变纯色，观感与 0.5.15 原版一致。选择持久化到 localStorage。
 - **蓝粉渐变滑杆**：所有「每张时长 / 浅色雾层 / 深色遮罩 / 背景模糊度 / 背景亮度 / 安全放大」滑杆的**已填充轨道**改为从蔚蓝渐变到玫粉（与面板顶部装饰线一致），未填充部分保持中性色。原生 `accent-color` 只能单色，改用 `::-webkit-slider-runnable-track` / `::-moz-range-progress` 自定义轨道，并由 `--wbg-range-p` 按当前值截断渐变。经典配色下两色退回品牌主色，渐变自动变纯色。
 - **侧栏 logo 蓝粉渐变**：鲸鱼图标 + `deepseek` 字标改为与主题一致的蓝→粉渐变；`HARNESS` 徽标保持原来的反色底与可读性。实现上不覆盖 DSH 的 `sidebar.brand.*` slot（避免丢掉原字标字形），而是给原 SVG 注入 `linearGradient` 并把 `path[fill="currentColor"]` 指向它；用低频 `MutationObserver` 在侧栏折叠/展开或 React 重渲染后自动补回。经典配色下两色退回品牌主色，logo 自动恢复纯色。
+- **滚动条蓝粉渐变**：全局滚动条（最右侧主滚动条、侧栏、代码块与弹层里的滚动条）的滑块改为竖直蓝→粉渐变，hover 时两端颜色对调。实现：把 `--dsw-alias-scrollbar-bg-l1/l2` 与 `--dsw-alias-scrollbar-hover-l1/l2` 四个令牌改成 `linear-gradient(180deg, var(--wbg-azure), var(--wbg-rose))`；DSH 原 hover 规则用的是 `background-color`（不吃渐变），补一条 `::-webkit-scrollbar-thumb:hover{background-image:…}`。
 
 ## [0.5.15] - 2026-10-18
 
