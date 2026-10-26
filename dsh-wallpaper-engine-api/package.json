@@ -1,6 +1,6 @@
 {
   "name": "dsh-wallpaper-engine-api",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "DeepSeek Harness (Cordis) 插件：在本机以只读 HTTP API 提供 Wallpaper Engine 壁纸库，供 dsh-wallpaper-bg 的「WE 壁纸库」来源使用。一条命令装好即用，不再需要 clone 仓库、npm install、.bat 脚本或开机自启。",
   "type": "module",
   "main": "index.js",

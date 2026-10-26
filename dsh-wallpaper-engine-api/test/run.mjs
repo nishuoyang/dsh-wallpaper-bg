@@ -12,6 +12,9 @@ import { Writable } from 'node:stream'
 import assert from 'node:assert/strict'
 import { createWeApiService } from '../lib/we-api-service.js'
 
+// 版本号只在 package.json 里维护，发版时不需要改测试
+const pkgVersion = JSON.parse(fs.readFileSync(new URL('../package.json', import.meta.url), 'utf8')).version
+
 let pass = 0
 let fail = 0
 const failures = []
@@ -427,7 +430,7 @@ try {
       const status = JSON.parse(res.text)
       assert.equal(status.ok, true)
       assert.equal(status.plugin, 'dsh-wallpaper-engine-api')
-      assert.equal(status.pluginVersion, '0.1.0')
+      assert.equal(status.pluginVersion, pkgVersion)
       assert.equal(status.discover, true)
       assert.match(status.base, /^http:\/\/127\.0\.0\.1:\d+$/)
       assert.equal(status.apiBase, status.base)

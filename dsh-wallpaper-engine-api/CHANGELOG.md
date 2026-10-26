@@ -2,6 +2,14 @@
 
 本文件记录 dsh-wallpaper-engine-api 的用户可见变更。格式参考 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)。
 
+## [0.1.1] - 2026-10-27
+
+### 文档
+
+- **重写中文 README**：补齐主要 API 接口说明（端点别名、查询参数、响应字段、状态码、缓存与 Range 行为）、使用示例（命令行自检、多显示器、iframe 嵌入网页壁纸）、配置项与环境变量对照表、常见问题；中英文互加语言切换入口。
+- **英文 README 同步为相同结构**：新增 Features / API reference / Usage examples / Publishing to npm 小节，原有内容与措辞保留。
+- 无代码变更，行为与 0.1.0 一致。
+
 ## [0.1.0] - 2026-10-18
 
 ### 新增

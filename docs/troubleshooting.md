@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg 故障排查手册
 
-> 适用版本：插件 **0.5.16**（宿主半 `/dsh-wallpaper-bg/health` 里的 `version`）、可选配套插件 **dsh-wallpaper-engine-api 0.1.0**（同源 `/dsh-wallpaper-engine-api/status`）；旧的手动服务仍为 WE API **0.5.1**（`http://127.0.0.1:8088/health` 里的 `version`）。
+> 适用版本：插件 **0.5.16**（宿主半 `/dsh-wallpaper-bg/health` 里的 `version`）、可选配套插件 **dsh-wallpaper-engine-api 0.1.1**（同源 `/dsh-wallpaper-engine-api/status`）；旧的手动服务仍为 WE API **0.5.1**（`http://127.0.0.1:8088/health` 里的 `version`）。
 > **0.5.14 起，WE 壁纸库优先用配套插件**：`dsh plugin --profile <name> add dsh-wallpaper-engine-api`（或桌面端 设置 → 插件 填包名）。下文 §4.1–§4.12 里涉及 `wallpaper-engine-api/` 目录、`.bat`、开机自启、PATH 里的 Node.js 的步骤，只适用于**旧的手动部署**。
 > 本文只回答一个问题：**出状况时按什么顺序查、每一步对应什么动作**。功能说明与安装步骤见 [`README.zh.md`](../README.zh.md)（英文版 [`README.md`](../README.md)），逐版变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
 
