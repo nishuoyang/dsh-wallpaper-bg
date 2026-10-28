@@ -120,4 +120,4 @@ dsh web --port 3188 --no-open
 
 ## 6. 发布
 
-上述 7 项修复进入 **0.5.17**；`CHANGELOG.md` 的「未发布」条目已按本报告整理。可选插件 `dsh-wallpaper-engine-api` 本轮未发现需要改代码的问题，版本保持 0.1.1。
+上述 9 项修复进入 **0.5.17**；`CHANGELOG.md` 的「未发布」条目已按本报告整理。可选插件 `dsh-wallpaper-engine-api` 本轮未发现需要改代码的问题，版本保持 0.1.1。
