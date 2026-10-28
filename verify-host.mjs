@@ -117,10 +117,13 @@ const first = auto.monitors[0] && auto.monitors[0].key
 if (first) {
   const forced = JSON.parse((await call(`/dsh-wallpaper-bg/we?action=current&monitor=${encodeURIComponent(first)}&base=${encodeURIComponent(WE_BASE)}`)).text)
   ok(`monitor=${first} 透传到服务并生效`, forced.monitor === first && forced.monitorSource === 'manual', `monitor=${forced.monitor} source=${forced.monitorSource}`)
+  ok(`monitor=${first} 首次请求没有复用 auto 缓存`, forced.fromCache !== true, `fromCache=${forced.fromCache}`)
   const cached = JSON.parse((await call(`/dsh-wallpaper-bg/we?action=current&monitor=${encodeURIComponent(first)}&base=${encodeURIComponent(WE_BASE)}`)).text)
   ok('同显示器第二次命中宿主缓存', cached.fromCache === true)
   const autoAgain = JSON.parse((await call('/dsh-wallpaper-bg/we?action=current&base=' + encodeURIComponent(WE_BASE))).text)
-  ok('auto 与指定显示器是两份缓存（切换即生效，不吃上一台的缓存）', autoAgain.fromCache === false || autoAgain.monitor !== forced.monitor, `monitor=${autoAgain.monitor} fromCache=${autoAgain.fromCache}`)
+  // auto 缓存与指定显示器缓存是两个 key：指定显示器那次不应覆盖 auto，
+  // 所以这里应命中 auto 自己的缓存；再结合上一条「首次没有复用 auto」，即证明两份缓存独立。
+  ok('auto 与指定显示器是两份缓存', autoAgain.fromCache === true && autoAgain.monitor === auto.monitor, `monitor=${autoAgain.monitor} fromCache=${autoAgain.fromCache}`)
   const refresh = JSON.parse((await call(`/dsh-wallpaper-bg/we?action=current&monitor=${encodeURIComponent(first)}&refresh=1&base=${encodeURIComponent(WE_BASE)}`)).text)
   ok('refresh=1 绕过宿主缓存', refresh.fromCache === false)
 }
@@ -136,7 +139,10 @@ if (auto.current && auto.current.previewFile) {
 }
 
 const missing = await call('/dsh-wallpaper-bg/asset?path=' + encodeURIComponent('E:\\definitely-missing.png'))
-ok('/asset 不存在文件 → 404', missing.status === 404)
+ok('/asset 未登记路径 → 403（只代理 WE 清单里的文件）', missing.status === 403)
+
+const arbitrary = await call('/dsh-wallpaper-bg/asset?path=' + encodeURIComponent('C:\\Windows\\win.ini'))
+ok('/asset 任意本地文件 → 403（不再能读清单外文件）', arbitrary.status === 403)
 
 console.log(`\n${pass} passed, ${fail} failed`)
 await new Promise((resolve) => discoveryServer.close(() => resolve()))

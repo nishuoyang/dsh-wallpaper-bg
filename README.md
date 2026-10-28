@@ -105,7 +105,9 @@ Verify the host half is mounted at `<DSH address>/dsh-wallpaper-bg/health`:
 
 ```
 http://127.0.0.1:3080/dsh-wallpaper-bg/health     # dsh web (default port 3080)
-http://127.0.0.1:19387/dsh-wallpaper-bg/health    # desktop app (fixed port 19387)
+http://127.0.0.1:19387/dsh-wallpaper-bg/health    # desktop app 0.2.0-rc.2 and earlier (fixed port)
+# desktop app 0.2.1+: the web server uses a random port; use the one printed in the
+# startup log as `dsh web: http://127.0.0.1:<port>/?token=...`
 ```
 
 > The plugin also ships a `dsh-wallpaper-bg` CLI (`install` / `status` / `uninstall`) for one-command setup on a CLI install; it skips the `desktop` profile, which the Electron app owns.

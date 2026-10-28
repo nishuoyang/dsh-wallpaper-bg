@@ -48,7 +48,7 @@ const DEFAULT_NAME = '壁纸背景 (standard)'
 const DEFAULT_WE_BASE = 'http://127.0.0.1:8088'
 /** npm 包名：bundle 组合层与桌面端插件管理页面都按它识别本插件 */
 const PACKAGE_NAME = 'dsh-wallpaper-bg'
-/** 仓库地址：WE 壁纸库需要的 wallpaper-engine-api 服务只随仓库提供（不在 npm 包里） */
+/** 仓库地址：文档 / issue 入口 */
 const REPO_URL = 'https://github.com/nishuoyang/dsh-wallpaper-bg'
 /** Electron 桌面端（0.2+）独占管理的 profile 名 */
 const DESKTOP_PROFILE = 'desktop'
@@ -602,8 +602,9 @@ function printStatus() {
   lines.push('安装：dsh-wallpaper-bg install（默认 profile 补丁层，启动即生效；--preset 为按会话模式）')
   lines.push('      桌面端请在应用内「设置 → 插件」输入 ' + PACKAGE_NAME + '（终端无法启动 desktop profile）')
   lines.push('卸载：dsh-wallpaper-bg uninstall [--preset]')
-  lines.push('WE 壁纸库（可选）：需要仓库里的 wallpaper-engine-api 服务（不在 npm 包里）——')
-  lines.push('      git clone ' + REPO_URL + ' → wallpaper-engine-api 里 npm install → 运行 启动服务.bat')
+  lines.push('WE 壁纸库（可选）：再装配套插件 dsh-wallpaper-engine-api（随 DSH 启停，无需独立服务）')
+  lines.push('      dsh plugin --profile <你的 profile> add dsh-wallpaper-engine-api')
+  lines.push('文档：' + REPO_URL + '#readme')
   return lines.join('\n')
 }
 
@@ -631,8 +632,9 @@ function main() {
         'install 会跳过它并提示——请在应用内「设置 → 插件」输入包名 dsh-wallpaper-bg，',
         '或运行 dsh plugin --profile desktop add dsh-wallpaper-bg。',
         '',
-        '（可选）WE 壁纸库：需要仓库里的 wallpaper-engine-api 服务（不在 npm 包里）——',
-        'git clone ' + REPO_URL + '，进入 wallpaper-engine-api 执行 npm install，再运行 启动服务.bat。',
+        '（可选）WE 壁纸库：再装配套插件 dsh-wallpaper-engine-api（随 DSH 启停，不需要独立服务）——',
+        'dsh plugin --profile web add dsh-wallpaper-engine-api（桌面端用 --profile desktop，或在 设置 → 插件 里装）。',
+        '文档：' + REPO_URL + '#readme',
       ].join('\n'),
     )
     return
@@ -742,8 +744,8 @@ function main() {
     console.log('  - 之后每次 dsh web 启动，首次加载页面就带壁纸背景，无需会话或预设')
     if (touchedDesktop) console.log('  - 桌面端：' + desktopNote())
     console.log('')
-    console.log('（可选）WE 壁纸库：该来源需要仓库里的 wallpaper-engine-api 服务（不在 npm 包里）——')
-    console.log('  git clone ' + REPO_URL + '，进入 wallpaper-engine-api 执行 npm install，再运行 启动服务.bat')
+    console.log('（可选）WE 壁纸库：再装配套插件 dsh-wallpaper-engine-api（随 DSH 启停，不需要独立服务）——')
+    console.log('  dsh plugin --profile <你的 profile> add dsh-wallpaper-engine-api')
     return
   }
   if (cmd === 'uninstall') {
