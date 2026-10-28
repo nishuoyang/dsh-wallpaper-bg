@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg 故障排查手册
 
-> 适用版本：插件 **0.5.16**（宿主半 `/dsh-wallpaper-bg/health` 里的 `version`）、可选配套插件 **dsh-wallpaper-engine-api 0.1.1**（同源 `/dsh-wallpaper-engine-api/status`）；旧的手动服务仍为 WE API **0.5.1**（`http://127.0.0.1:8088/health` 里的 `version`）。
+> 适用版本：插件 **0.5.17**（宿主半 `/dsh-wallpaper-bg/health` 里的 `version`）、可选配套插件 **dsh-wallpaper-engine-api 0.1.1**（同源 `/dsh-wallpaper-engine-api/status`）；旧的手动服务仍为 WE API **0.5.1**（`http://127.0.0.1:8088/health` 里的 `version`）。
 > **0.5.14 起，WE 壁纸库优先用配套插件**：`dsh plugin --profile <name> add dsh-wallpaper-engine-api`（或桌面端 设置 → 插件 填包名）。下文 §4.1–§4.12 里涉及 `wallpaper-engine-api/` 目录、`.bat`、开机自启、PATH 里的 Node.js 的步骤，只适用于**旧的手动部署**。
 > 本文只回答一个问题：**出状况时按什么顺序查、每一步对应什么动作**。功能说明与安装步骤见 [`README.zh.md`](../README.zh.md)（英文版 [`README.md`](../README.md)），逐版变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
 
@@ -20,7 +20,7 @@
 
 | # | 检查 | 怎么做 | 正常应该看到 |
 | --- | --- | --- | --- |
-| 1 | 插件宿主半是否挂上 | 浏览器打开 `http://127.0.0.1:19387/dsh-wallpaper-bg/health`（桌面端固定 19387）；`dsh web` 默认换 **3080** | `{"ok":true,"plugin":"dsh-wallpaper-bg","version":"0.5.16","monitorForward":1,"discoverWeApi":1}` |
+| 1 | 插件宿主半是否挂上 | `dsh web` 默认打开 `http://127.0.0.1:3080/dsh-wallpaper-bg/health`；桌面端 0.2.0-rc.2 及更早固定 **19387**，0.2.1 起用启动日志里 `dsh web: http://127.0.0.1:<port>/?token=...` 的随机端口 | `{"ok":true,"plugin":"dsh-wallpaper-bg","version":"0.5.17","monitorForward":1,"discoverWeApi":1}` |
 | 2 | WE API 是否可用（只影响 WE 壁纸库） | 先看 `<DSH 地址>/dsh-wallpaper-engine-api/status`；再看它的 `base`（通常 `http://127.0.0.1:8088`）的 `/health` | `{"ok":true,"status":"running","base":"http://127.0.0.1:8088",…}`；服务 `/health` 含 `"mode":"readonly"` |
 | 3 | profile 是否真把它当组合层加载 | 仓库里 `node .\bin\dsh-wallpaper-bg.js status`（或用 `npx dsh-wallpaper-bg status`） | 出现 `installed（bundle 层，随 DSH 启动加载）` |
 
@@ -97,8 +97,8 @@ DSH 只在把插件记进 profile 的 **组合层列表** 时才加载它；依�
 2. 重跑一次安装命令把列表补上（**带上版本号**，否则可能装到旧版，见 [§2.3](#23-版本比-npm-上的旧--重复-add-不升级)）：
 
    ```bash
-   dsh plugin --profile web add dsh-wallpaper-bg@0.5.16     # 网页版 / 命令行
-   dsh plugin --profile desktop add dsh-wallpaper-bg@0.5.16 # 桌面端（等价于插件页面里重装）
+   dsh plugin --profile web add dsh-wallpaper-bg@0.5.17     # 网页版 / 命令行
+   dsh plugin --profile desktop add dsh-wallpaper-bg@0.5.17 # 桌面端（等价于插件页面里重装）
    ```
 
    也可以直接检查 `%DSH_HOME%\profiles\<profile>\package.json`（`DSH_HOME` 默认 `C:\Users\<你>\.dsh`）里 `dsh.profile.bundles` 数组是否含 `dsh-wallpaper-bg`。
@@ -130,8 +130,8 @@ dsh plugin --profile <profile> remove dsh-wallpaper-bg
 
 | 现象 | 原因 | 解决 |
 | --- | --- | --- |
-| 重复跑 `dsh plugin … add dsh-wallpaper-bg` 版本纹丝不动 | `add` 转发给 `pnpm add`，pnpm 保留清单里已有的版本范围（停在 `^0.4.1` 就永远是 0.4.x） | 显式写版本或 `@latest`：`… add dsh-wallpaper-bg@latest` / `… add dsh-wallpaper-bg@0.5.16` |
-| `@latest` 也装到上一个版本，命令还提示 `(0.5.16 is available)` | pnpm 11 默认 24 小时 `minimumReleaseAge`（供应链保护）：发布未满一天的版本会被跳过 | 三选一：写死版本号；加 `--config.minimumReleaseAge=0`；在 profile 的 `pnpm-workspace.yaml` 里写 `minimumReleaseAgeExclude: [dsh-wallpaper-bg]` |
+| 重复跑 `dsh plugin … add dsh-wallpaper-bg` 版本纹丝不动 | `add` 转发给 `pnpm add`，pnpm 保留清单里已有的版本范围（停在 `^0.4.1` 就永远是 0.4.x） | 显式写版本或 `@latest`：`… add dsh-wallpaper-bg@latest` / `… add dsh-wallpaper-bg@0.5.17` |
+| `@latest` 也装到上一个版本，命令还提示 `(0.5.17 is available)` | pnpm 11 默认 24 小时 `minimumReleaseAge`（供应链保护）：发布未满一天的版本会被跳过 | 三选一：写死版本号；加 `--config.minimumReleaseAge=0`；在 profile 的 `pnpm-workspace.yaml` 里写 `minimumReleaseAgeExclude: [dsh-wallpaper-bg]` |
 
 桌面端的「设置 → 插件」页面走的是同一个 pnpm，所以刚发布的版本同样要等约一天才会出现在那里。
 
@@ -187,7 +187,7 @@ profile "desktop" is managed exclusively by the Electron application
 
 插件把设置存在 **localStorage**、把自定义上传存在 **IndexedDB**，两者都绑定**页面 origin**（协议 + 主机 + 端口）。origin 一变，浏览器就当成另一个站点，旧数据还在但读不到——表现就是「设置被重置、上传的壁纸全不见了」。
 
-- 桌面端固定用 **19387** 跑 desktop profile，origin 稳定，重启应用数据都在；
+- 桌面端渲染页面使用固定 origin `dsh-app://app`，所以内部 Web 服务端口变化（0.2.1 起是随机端口）不影响数据，重启应用设置和上传都还在；
 - `dsh web` 如果改了 `--port`、换了主机名（`127.0.0.1` ↔ `localhost` 也算不同 origin）、或从浏览器换到了桌面端，就会看到这个现象。
 
 想找回数据：换回原来的地址（例如 `http://127.0.0.1:3080`）；确认不是被浏览器清理了站点数据（见 [§3.6](#36-上传之后网格里没有新壁纸也没有任何报错)）。
@@ -715,7 +715,7 @@ Windows PowerShell 5.1 对**没有 BOM** 的 `.ps1` 按 ANSI 解码，脚本里�
 
 ## 7. 准备报 bug 时，请附上这些
 
-1. **部署方式与端口**：桌面端（19387）还是 `dsh web`（默认 3080）。
+1. **部署方式与端口**：桌面端（0.2.0-rc.2 及更早固定 19387；0.2.1+ 见启动日志）还是 `dsh web`（默认 3080）。
 2. **插件版本**：`http://127.0.0.1:<端口>/dsh-wallpaper-bg/health` 的完整输出（含 `version`、`monitorForward`）。
 3. **WE 服务（如涉及）**：`http://127.0.0.1:8088/health` 的完整输出；必要时 `we-api.log` 末尾 40 行。
 4. **安装状态**：`dsh-wallpaper-bg status` 的输出。
@@ -726,7 +726,7 @@ Windows PowerShell 5.1 对**没有 BOM** 的 `.ps1` 按 ANSI 解码，脚本里�
 一键收集（PowerShell，按实际端口改第一行）：
 
 ```powershell
-$p = 19387
+$p = 19387   # 桌面端 0.2.0-rc.2 及更早；0.2.1+ 改成启动日志 dsh web: 后面的端口
 (Invoke-WebRequest -UseBasicParsing "http://127.0.0.1:$p/dsh-wallpaper-bg/health").Content
 try { (Invoke-WebRequest -UseBasicParsing 'http://127.0.0.1:8088/health').Content } catch { "WE API 不可达：$($_.Exception.Message)" }
 node .\bin\dsh-wallpaper-bg.js status
@@ -741,7 +741,7 @@ Get-Content .\wallpaper-engine-api\we-api.log -Encoding UTF8 -Tail 40
 
 | 用途 | 地址 |
 | --- | --- |
-| 插件宿主半健康检查（桌面端） | `http://127.0.0.1:19387/dsh-wallpaper-bg/health` |
+| 插件宿主半健康检查（桌面端） | 0.2.0-rc.2 及更早：`http://127.0.0.1:19387/dsh-wallpaper-bg/health`；0.2.1+：`http://127.0.0.1:<启动日志中的端口>/dsh-wallpaper-bg/health` |
 | 插件宿主半健康检查（`dsh web`） | `http://127.0.0.1:3080/dsh-wallpaper-bg/health` |
 | WE API 服务健康检查（别名 `/api/health`、`/`） | `http://127.0.0.1:8088/health` |
 | 服务返回的壁纸列表（`?refresh=1` 绕过缓存） | `http://127.0.0.1:8088/api/wallpapers?refresh=1` |

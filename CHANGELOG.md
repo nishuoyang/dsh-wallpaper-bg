@@ -4,6 +4,22 @@
 
 > 发版时把下面的 `## [未发布]` 改成 `## [x.y.z] - YYYY-MM-DD`（`scripts/release.ps1` 要求存在对应版本条目）。
 
+## [0.5.17] - 2026-10-28
+
+### 修复
+
+- **WE 错误提示里的 `[object Object]`**（`lib/client.js`）：错误横幅把 `<code>` 元素拼进字符串，React 会把它转成 `[object Object]`，用户看不到 `/dsh-wallpaper-engine-api/status` 这个排查入口。改为把元素作为独立 child 传入，两个横幅（有缓存 / 无缓存）都修了。
+- **连不上 WE API 时显示错误地址**（`lib/client.js`）：手动把基地址改成 18088 后，横幅仍显示上次成功的 8088。现在优先显示本次请求地址，并注明「上次成功 8088」；「已自动发现实际服务」只在宿主半真的自动发现时显示。
+- **网络层错误不再只有 `fetch failed`**（`lib/host.js`）：`/we` 把 ECONNREFUSED / 超时 / ENOTFOUND / ECONNRESET 翻译成可操作提示，例如「无法连接 WE API（http://127.0.0.1:8088）：服务未启动或端口不对；如需 WE 壁纸库，请安装 dsh-wallpaper-engine-api 插件」。
+- **`/asset` 收紧为 WE 清单白名单**（`lib/host.js`）：此前任何能访问本机 DSH 端口的页面都能借 `/asset?path=` 读取任意本地文件（实测可读 `C:\Windows\win.ini`）。现在只代理 `/we` 列表 / 当前壁纸里出现过的 `filepath` / `thumbnail` / `previewFile`，30 分钟未再出现自动失效；清单外返回 403 并提示先刷新壁纸库。
+- **自定义上传先解码再入库**（`lib/client.js`）：不支持的类型、空文件、损坏或浏览器无法解码的文件会在上传时被拦下，并在面板里列出文件名与原因；此前会把任意文件直接存进 IndexedDB，选中后背景黑掉且没有任何提示。
+
+### 文档 / 测试
+
+- **桌面端端口说明修正**：0.2.1 起桌面端的 Web 服务使用随机端口（启动参数为 `--port 0`），README / 安装 / 架构 / 故障排查里的「固定 19387」只适用于 0.2.0-rc.2 及更早；桌面端数据持久化是因为渲染页 origin 固定为 `dsh-app://app`，与 HTTP 端口无关。
+- **桌面端命令行安装前提**：首次用 `dsh plugin --profile desktop` 前先打开一次桌面端初始化 profile；旧版全局 `dsh`（0.1.x）会生成缺少 `@deepseek-ai/dsh-web-app` 的 profile，应用启动报 `authenticatedUrl`。
+- **`verify-host.mjs` 缓存断言修正**：原断言把「auto 缓存仍在」误判成失败（实测 15 项里固定挂 1 项）；现在先断言指定显示器首次不复用 auto 缓存，再断言 auto 缓存仍命中，18 项全部通过。
+
 ## [0.5.16] - 2026-10-21
 
 ### 新增

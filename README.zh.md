@@ -105,7 +105,8 @@ dsh web
 
 ```
 http://127.0.0.1:3080/dsh-wallpaper-bg/health     # dsh web（默认端口 3080）
-http://127.0.0.1:19387/dsh-wallpaper-bg/health    # 桌面端（固定端口 19387）
+http://127.0.0.1:19387/dsh-wallpaper-bg/health    # 桌面端 0.2.0-rc.2 及更早（固定端口）
+# 桌面端 0.2.1 起：Web 服务端口是随机的，以启动日志里 dsh web: http://127.0.0.1:<port>/?token=... 为准
 ```
 
 > 本包另附 `dsh-wallpaper-bg` CLI（`install` / `status` / `uninstall`），面向命令行部署一键安装；它会跳过归桌面端独占的 `desktop` profile。

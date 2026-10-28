@@ -1,6 +1,6 @@
 # 架构与原理
 
-> 适用版本：dsh-wallpaper-bg 0.5.16（配套插件 dsh-wallpaper-engine-api 0.1.1）。本页说明本包的双半结构、组合方式与运行时的加载 / 刷新规则。
+> 适用版本：dsh-wallpaper-bg 0.5.17（配套插件 dsh-wallpaper-engine-api 0.1.1）。本页说明本包的双半结构、组合方式与运行时的加载 / 刷新规则。
 
 - [双半结构](#双半结构)
 - [零构建与 CLI](#零构建与-cli)
@@ -36,7 +36,7 @@
 - **浏览器半（`lib/client.js`）**：每次请求都从磁盘现读（`cache-control: no-cache`），改完**普通刷新页面（F5）即可**；
 - **宿主半（`lib/host.js`）与 `bin/`**：Node 侧 ESM 模块，随进程启动加载、进程内不会重新导入，改完**必须重启 DSH**（`dsh web` 重启进程，桌面端退出应用再打开）；
 - 增删插件行 / 修改 `dsh.client` 声明等插件集合变化同样需要重启；
-- 判断当前跑的是哪版宿主半：打开 `<DSH 地址>/dsh-wallpaper-bg/health` 看 `version`（桌面端固定 19387 端口，`dsh web` 默认 3080）。0.5.14 起该响应还带 `discoverWeApi: 1`。
+- 判断当前跑的是哪版宿主半：打开 `<DSH 地址>/dsh-wallpaper-bg/health` 看 `version`（`dsh web` 默认 3080；桌面端 0.2.0-rc.2 及更早固定 19387，0.2.1 起为随机端口，以启动日志为准）。0.5.14 起该响应还带 `discoverWeApi: 1`。
 - 改宿主的 `weApi` 发现逻辑或配套插件后，同样需要重启 DSH；配套插件是 host 平面模块，不支持进程内热重载。
 
 ## 桌面端窗口镶嵌（0.2.1 起）
