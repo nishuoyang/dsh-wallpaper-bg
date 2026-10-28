@@ -19,7 +19,7 @@
 
 ## 功能
 
-- **三种壁纸来源**：内置 10 张 Unsplash 高清图（网格缩略图随包内置，首屏不用等网络），即装即用；自定义上传（本地图片 / 视频，存入 IndexedDB，视频自动生成首帧缩略图）；以及只读接入本机 **Wallpaper Engine** 已安装壁纸（装配套插件 [`dsh-wallpaper-engine-api`](https://github.com/nishuoyang/dsh-wallpaper-bg/tree/main/dsh-wallpaper-engine-api#readme) 后自动发现端口），按 Steam 真实订阅清单过滤。
+- **三种壁纸来源**：内置 10 张 Unsplash 高清图（网格缩略图与 1920w 背景都随包内置，离线可用），即装即用；自定义上传（本地图片 / 视频，存入 IndexedDB，视频自动生成首帧缩略图）；以及只读接入本机 **Wallpaper Engine** 已安装壁纸（装配套插件 [`dsh-wallpaper-engine-api`](https://github.com/nishuoyang/dsh-wallpaper-bg/tree/main/dsh-wallpaper-engine-api#readme) 后自动发现端口），按 Steam 真实订阅清单过滤。
 - **播放队列**：自定义上传与 WE 壁纸库各有独立队列，拖入壁纸循环播放，每张停留 1–10 分钟；支持拖拽排序、点选跳播、× 移除、清空，队列内容持久化到 localStorage，队列吸顶在页签顶部。
 - **四种渲染**：静态图片（cover 铺满）、视频（`<video object-fit: cover>`，GPU 合成缩放）、场景（WE 自带的工坊预览图 `preview.gif` / `preview.jpg`）、网页（iframe 原生渲染 `index.html`）。
 - **四项调节**：浅色雾层 / 深色遮罩（随 DSH 主题自动切换）、背景模糊度（0–20px）、背景亮度（50–150%）、安全放大（0–10%，裁掉边缘黑边）。

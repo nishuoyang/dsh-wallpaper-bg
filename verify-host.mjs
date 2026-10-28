@@ -147,6 +147,9 @@ ok('/asset 任意本地文件 → 403（不再能读清单外文件）', arbitra
 const builtinThumb = await call('/dsh-wallpaper-bg/builtin/thumb-01.webp')
 ok('内置壁纸缩略图路由可用', builtinThumb.status === 200 && builtinThumb.headers['Content-Type'] === 'image/webp' && builtinThumb.body.length > 0, `${builtinThumb.status} ${builtinThumb.headers['Content-Type']} ${builtinThumb.body.length}B`)
 
+const builtinFull = await call('/dsh-wallpaper-bg/builtin/full-01.webp')
+ok('内置壁纸 1920w 背景路由可用', builtinFull.status === 200 && builtinFull.headers['Content-Type'] === 'image/webp' && builtinFull.body.length > 100000, `${builtinFull.status} ${builtinFull.headers['Content-Type']} ${builtinFull.body.length}B`)
+
 const builtinTraversal = await call('/dsh-wallpaper-bg/builtin/..%2F..%2Fpackage.json')
 ok('内置资源路由拒绝目录穿越', builtinTraversal.status === 404)
 
