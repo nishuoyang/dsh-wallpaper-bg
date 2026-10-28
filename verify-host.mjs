@@ -144,6 +144,12 @@ ok('/asset 未登记路径 → 403（只代理 WE 清单里的文件）', missin
 const arbitrary = await call('/dsh-wallpaper-bg/asset?path=' + encodeURIComponent('C:\\Windows\\win.ini'))
 ok('/asset 任意本地文件 → 403（不再能读清单外文件）', arbitrary.status === 403)
 
+const builtinThumb = await call('/dsh-wallpaper-bg/builtin/thumb-01.webp')
+ok('内置壁纸缩略图路由可用', builtinThumb.status === 200 && builtinThumb.headers['Content-Type'] === 'image/webp' && builtinThumb.body.length > 0, `${builtinThumb.status} ${builtinThumb.headers['Content-Type']} ${builtinThumb.body.length}B`)
+
+const builtinTraversal = await call('/dsh-wallpaper-bg/builtin/..%2F..%2Fpackage.json')
+ok('内置资源路由拒绝目录穿越', builtinTraversal.status === 404)
+
 console.log(`\n${pass} passed, ${fail} failed`)
 await new Promise((resolve) => discoveryServer.close(() => resolve()))
 process.exitCode = fail ? 1 : 0

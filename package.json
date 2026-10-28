@@ -29,6 +29,7 @@
     "bin/dsh-wallpaper-bg.js",
     "cordis.patch.yml",
     "icon.svg",
+    "assets/builtin/",
     "README.md",
     "README.zh.md",
     "LICENSE",

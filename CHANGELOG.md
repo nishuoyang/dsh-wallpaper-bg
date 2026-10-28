@@ -4,6 +4,18 @@
 
 > 发版时把下面的 `## [未发布]` 改成 `## [x.y.z] - YYYY-MM-DD`（`scripts/release.ps1` 要求存在对应版本条目）。
 
+## [未发布]
+
+### 改进
+
+- **内置壁纸首屏不再空白**（`lib/client.js` / `lib/host.js` / `assets/builtin/`）：10 张 400w 网格缩略图本地化为 WebP（合计约 127 KB），由宿主半 `/dsh-wallpaper-bg/builtin/` 同源路由提供；卡片先显示首字 + 微光骨架，图片到达后淡入；本地资源缺失时回退 Unsplash 远程图，断网也不会空白。完整 1920w 背景仍走 Unsplash（后续可再本地化）。
+- **设置弹窗在极端壁纸下的可读性**（`lib/client.js`）：只对包含壁纸面板的 `[role="dialog"]` 把 `--dsw-alias-bg-layer-2` 提到 0.86，并把 tertiary / caption 调深/调亮一档；浅色遇纯黑、深色遇纯白的 secondary / tertiary / caption 均 ≥ 4.6:1。其他设置页、全局菜单、第三方插件表面保持原 0.62。
+- 宿主验收新增内置缩略图路由与目录穿越用例（20/20）。
+
+### 文档
+
+- README 中英文同步说明网格缩略图随包内置。
+
 ## [0.5.17] - 2026-10-28
 
 ### 修复
