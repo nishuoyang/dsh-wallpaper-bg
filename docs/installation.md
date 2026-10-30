@@ -1,6 +1,6 @@
 # 安装、升级与本地开发
 
-> 适用版本：dsh-wallpaper-bg 0.5.17。本页是 README「安装」章节的完整版：桌面端 / 命令行两种装法、升级机制、本地开发链接方式，以及安装后的验证手段。
+> 适用版本：dsh-wallpaper-bg 0.5.18。本页是 README「安装」章节的完整版：桌面端 / 命令行两种装法、升级机制、本地开发链接方式，以及安装后的验证手段。
 
 - [前提条件](#前提条件)
 - [桌面端安装（无需命令行）](#桌面端安装无需命令行)
@@ -56,10 +56,10 @@ dsh plugin --profile web add dsh-wallpaper-engine-api   # 可选：WE 壁纸库
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg@latest    # 升到最新发布版
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.17     # 或锁定某个具体版本
+dsh plugin --profile web add dsh-wallpaper-bg@0.5.18     # 或锁定某个具体版本
 ```
 
-> **pnpm 11 只安装「发布满一天」的版本。** pnpm 11 默认开启 24 小时的 `minimumReleaseAge`（供应链保护）：某版本发布后约一天内，`dsh plugin … add dsh-wallpaper-bg` 只会解析到**上一个版本**，并打印 `(0.5.17 is available)`；`@latest` 同样受这个门槛限制。想立刻装上刚发布的版本，可以：写死版本号（`dsh-wallpaper-bg@0.5.17`）、加 `--config.minimumReleaseAge=0`，或在 profile 的 `pnpm-workspace.yaml` 里把本包排除：
+> **pnpm 11 只安装「发布满一天」的版本。** pnpm 11 默认开启 24 小时的 `minimumReleaseAge`（供应链保护）：某版本发布后约一天内，`dsh plugin … add dsh-wallpaper-bg` 只会解析到**上一个版本**，并打印 `(0.5.18 is available)`；`@latest` 同样受这个门槛限制。想立刻装上刚发布的版本，可以：写死版本号（`dsh-wallpaper-bg@0.5.18`）、加 `--config.minimumReleaseAge=0`，或在 profile 的 `pnpm-workspace.yaml` 里把本包排除：
 >
 > ```yaml
 > minimumReleaseAgeExclude:

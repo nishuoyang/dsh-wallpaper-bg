@@ -1,6 +1,6 @@
 # 架构与原理
 
-> 适用版本：dsh-wallpaper-bg 0.5.17（配套插件 dsh-wallpaper-engine-api 0.1.1）。本页说明本包的双半结构、组合方式与运行时的加载 / 刷新规则。
+> 适用版本：dsh-wallpaper-bg 0.5.18（配套插件 dsh-wallpaper-engine-api 0.1.1）。本页说明本包的双半结构、组合方式与运行时的加载 / 刷新规则。
 
 - [双半结构](#双半结构)
 - [零构建与 CLI](#零构建与-cli)
