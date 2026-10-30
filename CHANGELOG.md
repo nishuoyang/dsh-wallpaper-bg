@@ -11,6 +11,7 @@
 - **内置壁纸首屏不再空白**（`lib/client.js` / `lib/host.js` / `assets/builtin/`）：10 张 400w 网格缩略图本地化为 WebP（合计约 127 KB），由宿主半 `/dsh-wallpaper-bg/builtin/` 同源路由提供；卡片先显示首字 + 微光骨架，图片到达后淡入；本地资源缺失时回退 Unsplash 远程图，断网也不会空白。
 - **内置壁纸 1920w 背景也本地化**（`assets/builtin/` / `lib/client.js`）：10 张 1920w WebP（q70，合计约 2.09 MB）随包发布，选中后直接走 `/dsh-wallpaper-bg/builtin/full-*.webp`，不再依赖 Unsplash；本地 `full-*` 缺失或加载失败时才回退远程 1920w。断网时内置壁纸的网格与背景都可用。
 - **设置弹窗在极端壁纸下的可读性**（`lib/client.js`）：只对包含壁纸面板的 `[role="dialog"]` 把 `--dsw-alias-bg-layer-2` 提到 0.86，并把 tertiary / caption 调深/调亮一档；浅色遇纯黑、深色遇纯白的 secondary / tertiary / caption 均 ≥ 4.6:1。其他设置页、全局菜单、第三方插件表面保持原 0.62。
+- **设置弹窗自适应表面（P2）**（`lib/client.js`）：复用 32×32 亮度图，按弹窗矩形取最不利的 10% 分位（浅色取最暗、深色取最亮），并折掉 DSH 遮罩（浅色 23.5% / 深色 50% 黑），在 0.72–0.88 里选仍满足 4.6:1 的最小 alpha。中间调壁纸下弹窗比固定 0.86 更透；没有亮度图（视频 / 网页 / 跨域）时保持 .86。文字 token 不变。
 - 宿主验收新增内置缩略图 / 完整背景路由与目录穿越用例（21/21）。
 
 ### 文档
