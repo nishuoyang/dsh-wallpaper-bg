@@ -96,6 +96,18 @@ ok(`host version ${PKG_VERSION}`, health.version === PKG_VERSION)
 ok('host monitorForward=1（monitor 会透传）', health.monitorForward === 1)
 ok('host discoverWeApi=1（会做同源发现）', health.discoverWeApi === 1)
 
+// /update：只查 npm 上的 latest。联网时 200 + latest，断网 / 代理不通时 502 + 原因——
+// 两种情况都算路由正常，所以这里只断言「结构化结果」，不把网络状态当成插件失败。
+const update = await call('/dsh-wallpaper-bg/update', {}, 12000)
+let updateJson = null
+try { updateJson = JSON.parse(update.text) } catch { updateJson = null }
+const updateStructured = !!updateJson && (
+  (update.status === 200 && updateJson.ok === true &&
+    /^\d+\.\d+\.\d+/.test(String(updateJson.latest || '')) && updateJson.current === PKG_VERSION) ||
+  (update.status === 502 && updateJson.ok === false && !!updateJson.error)
+)
+ok('/update 返回结构化结果（200 带 latest / 502 带原因）', updateStructured, `${update.status} ${String(update.text).slice(0, 140)}`)
+
 // 不传 base → 先走 /dsh-wallpaper-engine-api/status 发现，再打真实 WE API
 const discoveredPing = JSON.parse((await call('/dsh-wallpaper-bg/we?action=ping')).text)
 ok('不传 base 时自动发现 WE API 插件端口', discoveredPing.ok === true && discoveredPing.discovered === true && discoveredPing.weBase === WE_BASE,

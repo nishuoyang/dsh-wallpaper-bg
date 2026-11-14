@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-> v0.5.18 · MIT License
+> v0.5.19 · MIT License
 
 [![npm version](https://img.shields.io/npm/v/dsh-wallpaper-bg?label=npm&color=cb3837)](https://www.npmjs.com/package/dsh-wallpaper-bg)
 [![npm downloads](https://img.shields.io/npm/dm/dsh-wallpaper-bg?label=downloads)](https://www.npmjs.com/package/dsh-wallpaper-bg)
@@ -26,6 +26,7 @@ A static two-half plugin that puts an **independent animated wallpaper layer** u
 - **Unified azure × rose palette** across theme colors, translucent surfaces, buttons, text, links, gradient sliders, the sidebar logo, gradient scrollbars and user bubbles — shared by `dsh web` and the desktop app, including the title bar. Switch back to the original monochrome look under Settings → **General → Appearance → Theme palette** ("Classic"); the choice persists.
 - **Native background switch** on the main conversation page: clears the fog / overlay and the translucent page surfaces in one click, while the composer and dialogs keep their readable surfaces.
 - **Sync desktop wallpaper**: read-only follow of the current desktop wallpaper (30 s polling, immediate on tab focus), rendered by type, with automatic multi-monitor resolution and a monitor picker. It never changes your desktop wallpaper and never samples the screen.
+- **Check for updates**: a button at the bottom of Settings → Wallpaper queries npm for the `latest` version (10-minute cache, falls back to a mirror when the official registry times out). It only compares version numbers — no download, install, or profile change — and links to the release notes when a newer version exists.
 - **Black-flash-free switching** with next-item warm-up: wallpaper changes cross-fade two stacked layers over ~0.42 s, and the next queue item is preloaded while the current one plays.
 - **Zero local rendering, zero cache files**: no `scene.pkg` parsing, no frame files, no MP4s, no screen sampling, no `~/.dsh-wallpaper-bg` folder.
 
@@ -76,7 +77,7 @@ It serves a read-only WE API on `127.0.0.1:8088` and follows the DSH lifecycle; 
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg@latest    # move to the newest release
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.18     # or pin an exact version
+dsh plugin --profile web add dsh-wallpaper-bg@0.5.19     # or pin an exact version
 ```
 
 > pnpm 11 installs a release only after it is a day old (24 h `minimumReleaseAge`), so a just-published version resolves to the previous one for roughly a day. Name the exact version to take it immediately.

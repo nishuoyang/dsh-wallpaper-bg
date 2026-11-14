@@ -1,6 +1,6 @@
 # 架构与原理
 
-> 适用版本：dsh-wallpaper-bg 0.5.18（配套插件 dsh-wallpaper-engine-api 0.1.1）。本页说明本包的双半结构、组合方式与运行时的加载 / 刷新规则。
+> 适用版本：dsh-wallpaper-bg 0.5.19（配套插件 dsh-wallpaper-engine-api 0.1.1）。本页说明本包的双半结构、组合方式与运行时的加载 / 刷新规则。
 
 - [双半结构](#双半结构)
 - [零构建与 CLI](#零构建与-cli)
@@ -14,7 +14,7 @@
 
 | 半边 | 文件 | 职责 |
 | --- | --- | --- |
-| 宿主半（Node） | `lib/host.js` | 注册同源路由：`/dsh-wallpaper-bg/builtin`（随包内置的 10 张 400w WebP 网格缩略图 + 10 张 1920w WebP 背景，固定命名白名单）、`/dsh-wallpaper-bg/asset`（本地文件流式代理，支持 Range）、`/dsh-wallpaper-bg/we`（WE API 只读代理，带缓存，透传 `previewFile` / `previewSize`，`action=current` 时透传「跟随显示器」的 `monitor` 并计入缓存键；不传 base 时先向同源 `/dsh-wallpaper-engine-api/status` 发现配套插件的实际端口）、`/dsh-wallpaper-bg/health`（含 `monitorForward` / `discoverWeApi` 能力标记） |
+| 宿主半（Node） | `lib/host.js` | 注册同源路由：`/dsh-wallpaper-bg/builtin`（随包内置的 10 张 400w WebP 网格缩略图 + 10 张 1920w WebP 背景，固定命名白名单）、`/dsh-wallpaper-bg/asset`（本地文件流式代理，支持 Range）、`/dsh-wallpaper-bg/we`（WE API 只读代理，带缓存，透传 `previewFile` / `previewSize`，`action=current` 时透传「跟随显示器」的 `monitor` 并计入缓存键；不传 base 时先向同源 `/dsh-wallpaper-engine-api/status` 发现配套插件的实际端口）、`/dsh-wallpaper-bg/health`（含 `monitorForward` / `discoverWeApi` 能力标记）、`/dsh-wallpaper-bg/update`（向 npm 查 `latest` 版本号，只读、不下载，10 分钟缓存，官方源超时退国内镜像） |
 | 浏览器半 | `lib/client.js` | 单文件 client bundle（`window.__ModuleLoader__` 工厂形式），注入背景层与遮罩、注册设置面板「壁纸」选项卡；「同步桌面壁纸」只读跟随桌面壁纸，再按类型走普通渲染路径（场景 → 工坊预览图） |
 | 组合层 | `cordis.patch.yml` | `dsh.bundle` 补丁：把插件行插入 profile 组合的 host 平面，**随 DSH 启动即生效**（`dsh web` 与桌面端都一样），首次加载页面就带背景 |
 | 可选配套插件 | `dsh-wallpaper-engine-api/` | 独立 npm 包 / profile bundle：在 DSH 宿主进程内监听 `127.0.0.1:8088`（可配置）提供只读 WE API，并注册同源状态路由供本包发现 |

@@ -1,6 +1,6 @@
 # 安装、升级与本地开发
 
-> 适用版本：dsh-wallpaper-bg 0.5.18。本页是 README「安装」章节的完整版：桌面端 / 命令行两种装法、升级机制、本地开发链接方式，以及安装后的验证手段。
+> 适用版本：dsh-wallpaper-bg 0.5.19。本页是 README「安装」章节的完整版：桌面端 / 命令行两种装法、升级机制、本地开发链接方式，以及安装后的验证手段。
 
 - [前提条件](#前提条件)
 - [桌面端安装（无需命令行）](#桌面端安装无需命令行)
@@ -56,10 +56,10 @@ dsh plugin --profile web add dsh-wallpaper-engine-api   # 可选：WE 壁纸库
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg@latest    # 升到最新发布版
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.18     # 或锁定某个具体版本
+dsh plugin --profile web add dsh-wallpaper-bg@0.5.19     # 或锁定某个具体版本
 ```
 
-> **pnpm 11 只安装「发布满一天」的版本。** pnpm 11 默认开启 24 小时的 `minimumReleaseAge`（供应链保护）：某版本发布后约一天内，`dsh plugin … add dsh-wallpaper-bg` 只会解析到**上一个版本**，并打印 `(0.5.18 is available)`；`@latest` 同样受这个门槛限制。想立刻装上刚发布的版本，可以：写死版本号（`dsh-wallpaper-bg@0.5.18`）、加 `--config.minimumReleaseAge=0`，或在 profile 的 `pnpm-workspace.yaml` 里把本包排除：
+> **pnpm 11 只安装「发布满一天」的版本。** pnpm 11 默认开启 24 小时的 `minimumReleaseAge`（供应链保护）：某版本发布后约一天内，`dsh plugin … add dsh-wallpaper-bg` 只会解析到**上一个版本**，并打印 `(0.5.19 is available)`；`@latest` 同样受这个门槛限制。想立刻装上刚发布的版本，可以：写死版本号（`dsh-wallpaper-bg@0.5.19`）、加 `--config.minimumReleaseAge=0`，或在 profile 的 `pnpm-workspace.yaml` 里把本包排除：
 >
 > ```yaml
 > minimumReleaseAgeExclude:
@@ -67,6 +67,8 @@ dsh plugin --profile web add dsh-wallpaper-bg@0.5.18     # 或锁定某个具体
 > ```
 >
 > 桌面端的插件页面走的是同一个 pnpm，所以刚发布的版本也要等约一天才会出现在那里。
+
+不确定该升到哪个版本时，点**设置 → 壁纸**面板底部的「检查更新」：它会向 npm 查询本包的 `latest` 版本（结果缓存 10 分钟，先问官方源、超时再退国内镜像），把「当前版本 / 最新版本」显示在按钮旁边。它**只比版本号**——不下载 tarball、不安装、不改 profile，发现新版本时给一个「发布说明」链接，升级仍走上面的 `dsh plugin … add` 命令（同样受 pnpm 的 `minimumReleaseAge` 门槛影响）。检查失败会把原因写在按钮旁（例如连不上注册表），点一次即可重试。该接口由宿主半提供（`<DSH 地址>/dsh-wallpaper-bg/update`），所以**升级后第一次使用前需要重启 DSH**；页面里提示「宿主半是旧版」时按此处理。
 
 ## 安装后验证
 

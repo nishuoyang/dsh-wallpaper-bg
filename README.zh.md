@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-> v0.5.18 · MIT License
+> v0.5.19 · MIT License
 
 [![npm version](https://img.shields.io/npm/v/dsh-wallpaper-bg?label=npm&color=cb3837)](https://www.npmjs.com/package/dsh-wallpaper-bg)
 [![npm downloads](https://img.shields.io/npm/dm/dsh-wallpaper-bg?label=downloads)](https://www.npmjs.com/package/dsh-wallpaper-bg)
@@ -26,6 +26,7 @@
 - **统一蓝粉配色**：蔚蓝主色 + 玫粉高亮，覆盖主题色、半透明表面、按钮、文字、链接、蓝粉渐变滑杆、侧栏 logo、渐变滚动条、用户气泡；`dsh web` 与桌面端共用同一套令牌，桌面标题栏同步。设置 → **通用设置 → 外观 → 主题配色**可随时切回「经典」黑白主色，选择会持久化。
 - **原生背景开关**：主页面标题区一键清除雾层 / 遮罩与页面表面的半透明覆盖，露出完整壁纸，输入框和弹窗保持可读底色；关闭后恢复原数值。
 - **同步桌面壁纸**：只读跟随当前桌面壁纸（30 秒轮询，切回 DSH 页签立即跟随），按类型渲染；多显示器自动判定并可在状态行手动指定。不修改桌面、不采样桌面画面。
+- **检查更新**：设置 → 壁纸面板底部一键查询 npm 上的 `latest` 版本（10 分钟缓存，官方源超时退国内镜像）；只比版本号，不下载、不安装、不改 profile，有新版时给发布说明链接。
 - **无黑屏切换 + 下一张预热**：换壁纸采用双层交叉淡入淡出（约 0.42 秒），切换全程有画面；队列播放时会提前把下一张拉好，到点几乎立刻开始叠化。
 - **零本地渲染、零缓存文件**：不解析 `scene.pkg`、不渲染场景帧、不烘焙视频、不采样桌面画面，不建 `~/.dsh-wallpaper-bg`、不落帧文件、不产 MP4。
 
@@ -76,7 +77,7 @@ dsh plugin --profile desktop add dsh-wallpaper-engine-api  # 桌面端（或在 
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg@latest    # 升到最新发布版
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.18     # 或锁定某个具体版本
+dsh plugin --profile web add dsh-wallpaper-bg@0.5.19     # 或锁定某个具体版本
 ```
 
 > pnpm 11 只安装「发布满一天」的版本（默认 24 小时 `minimumReleaseAge`），刚发布的版本约一天内只会解析到上一个版本；写死版本号即可立刻装上。
