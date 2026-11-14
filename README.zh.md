@@ -19,7 +19,7 @@
 
 ## 功能
 
-- **三种壁纸来源**：内置 10 张 Unsplash 高清图（网格缩略图与 1920w 背景都随包内置，离线可用），即装即用；自定义上传（本地图片 / 视频，存入 IndexedDB，视频自动生成首帧缩略图）；以及只读接入本机 **Wallpaper Engine** 已安装壁纸（装配套插件 [`dsh-wallpaper-engine-api`](https://github.com/nishuoyang/dsh-wallpaper-bg/tree/main/dsh-wallpaper-engine-api#readme) 后自动发现端口），按 Steam 真实订阅清单过滤。
+- **三种壁纸来源**：内置 10 张 Unsplash 高清图（网格缩略图与 1920w 背景都随包内置，离线可用），即装即用；自定义上传（本地图片 / 视频，存入 IndexedDB，视频自动生成首帧缩略图）；以及只读接入本机 **Wallpaper Engine** 已安装壁纸（装配套插件 [`dsh-wallpaper-engine-api`](https://github.com/nishuoyang/dsh-wallpaper-engine-api#readme) 后自动发现端口），按 Steam 真实订阅清单过滤。
 - **播放队列**：自定义上传与 WE 壁纸库各有独立队列，拖入壁纸循环播放，每张停留 1–10 分钟；支持拖拽排序、点选跳播、× 移除、清空，队列内容持久化到 localStorage，队列吸顶在页签顶部。
 - **四种渲染**：静态图片（cover 铺满）、视频（`<video object-fit: cover>`，GPU 合成缩放）、场景（WE 自带的工坊预览图 `preview.gif` / `preview.jpg`）、网页（iframe 原生渲染 `index.html`）。
 - **四项调节**：浅色雾层 / 深色遮罩（随 DSH 主题自动切换）、背景模糊度（0–20px）、背景亮度（50–150%）、安全放大（0–10%，裁掉边缘黑边）。
@@ -69,7 +69,7 @@ dsh plugin --profile web add dsh-wallpaper-engine-api      # 网页版
 dsh plugin --profile desktop add dsh-wallpaper-engine-api  # 桌面端（或在 设置 → 插件 里填包名）
 ```
 
-它在本机 `127.0.0.1:8088` 启动只读 WE API，随 DSH 启停；主插件会通过同源状态路由自动发现实际端口。**不再需要** clone 仓库、`npm install`、双击 `.bat` 或设置开机自启。旧的 `wallpaper-engine-api/` 目录仍保留给手动部署的用户，新用户装这个插件就行。
+它在本机 `127.0.0.1:8088` 启动只读 WE API，随 DSH 启停；主插件会通过同源状态路由自动发现实际端口。**不再需要** clone 仓库、`npm install`、双击 `.bat` 或设置开机自启。旧的 [`wallpaper-engine-api`](https://github.com/nishuoyang/wallpaper-engine-api) 服务已迁到独立仓库，供手动部署的用户使用；新用户装这个插件就行。
 
 ### 升级（为什么只跑 `add` 不会升级）
 
@@ -118,7 +118,7 @@ http://127.0.0.1:19387/dsh-wallpaper-bg/health    # 桌面端 0.2.0-rc.2 及更�
 | --- | --- |
 | 安装、升级、本地开发 | [docs/installation.md](docs/installation.md) |
 | 设置面板逐项说明、队列、筛选 | [docs/configuration.md](docs/configuration.md) |
-| 可选组件：WE 壁纸库插件 `dsh-wallpaper-engine-api` | [docs/we-library-service.md](docs/we-library-service.md) · [插件 README](https://github.com/nishuoyang/dsh-wallpaper-bg/tree/main/dsh-wallpaper-engine-api#readme) |
+| 可选组件：WE 壁纸库插件 `dsh-wallpaper-engine-api` | [docs/we-library-service.md](docs/we-library-service.md) · [插件 README](https://github.com/nishuoyang/dsh-wallpaper-engine-api#readme) |
 | 症状 → 原因 → 动作 | [docs/troubleshooting.md](docs/troubleshooting.md) |
 | 双半结构与路由原理 | [docs/architecture.md](docs/architecture.md) |
 | 发布流程（scripts/release.ps1）与 CI 工作流 | [docs/releasing.md](docs/releasing.md) |

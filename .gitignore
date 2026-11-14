@@ -12,3 +12,8 @@ asar-filelist.txt
 # 本地临时工作区（性能测试床 / PoC / 截图草稿）与 agent 会话记忆
 .tmp-*/
 .workbuddy/
+# 已拆分为独立仓库，本仓库不再跟踪
+#   https://github.com/nishuoyang/dsh-wallpaper-engine-api
+#   https://github.com/nishuoyang/wallpaper-engine-api
+dsh-wallpaper-engine-api/
+wallpaper-engine-api/

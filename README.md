@@ -19,7 +19,7 @@ A static two-half plugin that puts an **independent animated wallpaper layer** u
 
 ## Features
 
-- **Three wallpaper sources**: 10 built-in high-res Unsplash images (grid thumbnails and 1920w backgrounds ship with the package, so they work offline); custom uploads (images / videos, stored in IndexedDB); and read-only access to your locally installed **Wallpaper Engine** library (the companion [`dsh-wallpaper-engine-api`](https://github.com/nishuoyang/dsh-wallpaper-bg/tree/main/dsh-wallpaper-engine-api#readme) plugin serves the API and the main plugin discovers its port), filtered by the real Steam subscription list.
+- **Three wallpaper sources**: 10 built-in high-res Unsplash images (grid thumbnails and 1920w backgrounds ship with the package, so they work offline); custom uploads (images / videos, stored in IndexedDB); and read-only access to your locally installed **Wallpaper Engine** library (the companion [`dsh-wallpaper-engine-api`](https://github.com/nishuoyang/dsh-wallpaper-engine-api#readme) plugin serves the API and the main plugin discovers its port), filtered by the real Steam subscription list.
 - **Playback queue** per source: drag wallpapers into the queue and loop-play them at 1–10 minutes per item, with drag-to-reorder, click-to-jump and localStorage persistence. The queue is sticky at the top of its tab.
 - **Four render modes**: static images (cover-fit), videos (`<video object-fit: cover>`, GPU compositing), scene wallpapers (WE's own workshop preview `preview.gif` / `preview.jpg`), and web wallpapers (native iframe rendering of `index.html`).
 - **Four adjustments**: light fog / dark overlay (auto-switching with the DSH theme), background blur (0–20px), background brightness (50–150%), safe zoom (0–10% to crop edge letterboxing).
@@ -69,7 +69,7 @@ dsh plugin --profile web add dsh-wallpaper-engine-api      # dsh web
 dsh plugin --profile desktop add dsh-wallpaper-engine-api  # desktop app (or type the package name in Settings → Plugins)
 ```
 
-It serves a read-only WE API on `127.0.0.1:8088` and follows the DSH lifecycle; the main plugin discovers the actual port through a same-origin status route. No repository clone, `npm install`, `.bat` launcher, or login autostart. The old `wallpaper-engine-api/` folder stays for manual installs; new users just install the plugin.
+It serves a read-only WE API on `127.0.0.1:8088` and follows the DSH lifecycle; the main plugin discovers the actual port through a same-origin status route. No repository clone, `npm install`, `.bat` launcher, or login autostart. The old [`wallpaper-engine-api`](https://github.com/nishuoyang/wallpaper-engine-api) service now lives in its own repository for manual installs; new users just install the plugin.
 
 ### Upgrading
 
@@ -119,7 +119,7 @@ http://127.0.0.1:19387/dsh-wallpaper-bg/health    # desktop app 0.2.0-rc.2 and e
 | --- | --- |
 | Install, upgrade, local development | [docs/installation.md](docs/installation.md) |
 | Every setting, queue and filter | [docs/configuration.md](docs/configuration.md) |
-| Optional WE library plugin `dsh-wallpaper-engine-api` | [docs/we-library-service.md](docs/we-library-service.md) · [plugin README](https://github.com/nishuoyang/dsh-wallpaper-bg/tree/main/dsh-wallpaper-engine-api#readme) |
+| Optional WE library plugin `dsh-wallpaper-engine-api` | [docs/we-library-service.md](docs/we-library-service.md) · [plugin README](https://github.com/nishuoyang/dsh-wallpaper-engine-api#readme) |
 | Symptom → cause → fix | [docs/troubleshooting.md](docs/troubleshooting.md) |
 | How the two halves work | [docs/architecture.md](docs/architecture.md) |
 | Releasing (`scripts/release.ps1`) and CI workflows | [docs/releasing.md](docs/releasing.md) |

@@ -1,7 +1,0 @@
-{
-  "name": "dsh-wallpaper-bg-we-api",
-  "version": "0.5.1",
-  "dependencies": {
-    "wallpaper-engine-api": "^1.0.2"
-  }
-}
