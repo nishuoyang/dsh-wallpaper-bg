@@ -17,7 +17,7 @@
 
   说明：
   - 版本号只认 package.json；-Version 会同步改写 package.json / lib/host.js /
-    lib/client.js / README.md / README.zh.md 中的版本字符串。
+    lib/client.js / README.md / README.en.md 中的版本字符串。
   - CHANGELOG.md 必须已有对应版本的条目，Release 说明直接取自该条目。
   - 预检会拒绝「标签已存在」「npm 上已发布该版本」的重复发布；确认是上一次
     中断留下的现场时用 -Resume 续跑（要求工作区干净、标签指向 HEAD、远端标签一致）。
@@ -238,7 +238,7 @@ if ($needsBump) {
     Info "将把 5 个文件里的 $($pkg.version) 替换为 $target"
   } else {
     Step "改写版本号 → $target"
-    foreach ($f in @('package.json', 'lib/host.js', 'lib/client.js', 'README.md', 'README.zh.md')) {
+    foreach ($f in @('package.json', 'lib/host.js', 'lib/client.js', 'README.md', 'README.en.md')) {
       $path = Join-Path $repo $f
       if (-not (Test-Path $path)) { Warn "跳过（不存在）：$f"; continue }
       $text = Get-Content $path -Raw -Encoding UTF8

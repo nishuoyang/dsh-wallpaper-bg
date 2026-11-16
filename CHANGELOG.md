@@ -4,6 +4,27 @@
 
 > 发版时把下面的 `## [未发布]` 改成 `## [x.y.z] - YYYY-MM-DD`（`scripts/release.ps1` 要求存在对应版本条目）。
 
+## [0.5.20] - 2026-11-16
+
+### 变更
+
+- **「原生背景」开关从聊天标题区迁到设置面板**（`lib/client.js`）：原先通过 `conversation.header.leading` 注入，在空白首页与每个会话页的标题区常驻一个胶囊开关，属于对聊天界面的侵入。现在改到「设置 → 壁纸」面板的「外观」组里，一行标题 + 说明 + 开关；标题区默认不再渲染插件控件（需要的话可在同一组里打开「在标题区显示快捷开关」）。状态沿用同一个 `nativeBackground` 字段与 `dsh-wallpaper-bg:settings:v1` 存储，升级后保持原来的开 / 关，不需要重新设置。
+- **README 中英文件名调整**：中文 README 改为 `README.md`（GitHub 仓库页与 npm 包页默认展示中文），英文改为 `README.en.md`；两份顶部的语言切换链接、`package.json` 的 `files` 与 `CONTRIBUTING.md` 的文档约定一并更新。
+
+### 改进
+
+- **原生背景开启时，雾层 / 遮罩两个滑杆置灰并禁用**（`lib/client.js`）：该模式下这两个值本来就不参与合成（`paintOverlay` 把 `base` 直接置 0），原来仍可拖动、数值照变，容易被当成失效。现在直接禁用（置灰即表示不可调）；背景模糊度 / 亮度 / 安全放大不受影响。
+- **标题区快捷开关改为可选、默认关闭**（`lib/client.js`）：设置 →「壁纸」→「外观」组新增一行「在标题区显示快捷开关」，打开后会话标题区恢复「原生背景」胶囊开关（仍注册在 `conversation.header.leading`，priority −1），关掉立即从标题区移除、不残留节点。默认关闭，保持 issue #4 要的「聊天界面零侵入」；状态存在 `headerQuickToggle` 字段，与 `nativeBackground` 一起持久化。
+
+### 修复
+
+- **第三方插件的弹窗会整块变透明，文字压在壁纸和聊天内容上**（`lib/client.js`）：插件把 `--dsw-alias-bg-base` 改成 `transparent` 让壁纸透出页面，而 dsh-lite-memory 这类插件直接拿 `bg-base` 当弹窗表面色，于是弹窗连底板一起透明。现在给「不含壁纸面板的 `[role="dialog"]`」恢复 DSH 原本的静态底色（浅色 `--dsw-static-neutral-bluish-00` / 深色 `--dsw-static-neutral-bluish-950`），并把它的直接父级（遮罩层）一起恢复——那层用 `bg-base` 调 58% 压暗；壁纸面板自己的弹窗仍按原来的 0.82–0.90 自适应 alpha。不支持 `:has` 的旧内核退回原行为。
+- **在设置面板里打开「原生背景」会让设置弹窗自己变透明**（`lib/client.js`）：原生背景的 `[role="dialog"]` 规则选择器优先级 (0,2,1) 高于设置弹窗的 (0,2,0)，浅色外观下弹窗表面会从 0.86 掉到 0.62；深色外观下两条规则打平、后写的设置规则赢，反而不受影响。补一组 (0,3,1) 的规则把设置弹窗的表面钉回面板设计的可读 alpha（0.82–0.90），亮暗一致。
+
+### 文档
+
+- `README.md` / `README.en.md` / `docs/configuration.md` / `docs/troubleshooting.md` / `tools/submission/hub-category-issue.md`：开关位置说明由「主页面标题区」改为「设置 → 壁纸」面板；`docs/configuration.md` 的「原生背景开关」一节补上雾层 / 遮罩滑杆的禁用行为。
+
 ## [0.5.19] - 2026-11-14
 
 ### 新增

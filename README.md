@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-> v0.5.19 · MIT License
+> v0.5.20 · MIT License
 
 [![npm version](https://img.shields.io/npm/v/dsh-wallpaper-bg?label=npm&color=cb3837)](https://www.npmjs.com/package/dsh-wallpaper-bg)
 [![npm downloads](https://img.shields.io/npm/dm/dsh-wallpaper-bg?label=downloads)](https://www.npmjs.com/package/dsh-wallpaper-bg)
@@ -9,123 +9,122 @@
 [![Listed on dsh-plugin.org](https://dsh-plugin.org/badges/listed.svg)](https://dsh-plugin.org/plugins/nishuoyang/dsh-wallpaper-bg)
 [![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
 
-English | [中文](README.zh.md)
+[English](README.en.md) | 中文
 
-A static two-half plugin that puts an **independent animated wallpaper layer** under the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (DSH) interface — both the browser UI (`dsh web`) and the 0.2 **desktop app** (0.2.1 verified). Install it with one command (or just the package name in the desktop app's plugin page) and the whole interface sits on a moving wallpaper. The background layer is fully independent from the desktop Wallpaper Engine: changing wallpapers inside DSH never touches your desktop wallpaper, and vice versa.
+给 [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness)（DSH）界面加上一层**独立的动态壁纸背景**的静态双半插件——`dsh web` 网页界面和 0.2 **桌面端**（0.2.1 已复核）都适用：装好（命令行一条命令；桌面端更是只在插件页面里填个包名）、刷新页面，整个界面的底层就变成一张会动的壁纸。背景层与桌面 Wallpaper Engine 完全独立：在 DSH 里换壁纸不会动你的桌面壁纸，反之亦然。
 
-![dsh-wallpaper-bg at a glance: the DSH interface sitting on an animated wallpaper, in native background mode](docs/screenshots/preview-hero.jpg)
+![一览：DSH 界面坐在会动的壁纸上（原生背景模式）](docs/screenshots/preview-hero.jpg)
 
-![Three wallpaper sources: built-in wallpapers, custom uploads, and the local Wallpaper Engine library](docs/screenshots/preview-sources.jpg)
+![三种壁纸来源：内置壁纸 / 自定义上传 / 本机 Wallpaper Engine 壁纸库](docs/screenshots/preview-sources.jpg)
 
-## Features
+## 功能
 
-- **Three wallpaper sources**: 10 built-in high-res Unsplash images (grid thumbnails and 1920w backgrounds ship with the package, so they work offline); custom uploads (images / videos, stored in IndexedDB); and read-only access to your locally installed **Wallpaper Engine** library (the companion [`dsh-wallpaper-engine-api`](https://github.com/nishuoyang/dsh-wallpaper-engine-api#readme) plugin serves the API and the main plugin discovers its port), filtered by the real Steam subscription list.
-- **Playback queue** per source: drag wallpapers into the queue and loop-play them at 1–10 minutes per item, with drag-to-reorder, click-to-jump and localStorage persistence. The queue is sticky at the top of its tab.
-- **Four render modes**: static images (cover-fit), videos (`<video object-fit: cover>`, GPU compositing), scene wallpapers (WE's own workshop preview `preview.gif` / `preview.jpg`), and web wallpapers (native iframe rendering of `index.html`).
-- **Four adjustments**: light fog / dark overlay (auto-switching with the DSH theme), background blur (0–20px), background brightness (50–150%), safe zoom (0–10% to crop edge letterboxing).
-- **Unified azure × rose palette** across theme colors, translucent surfaces, buttons, text, links, gradient sliders, the sidebar logo, gradient scrollbars and user bubbles — shared by `dsh web` and the desktop app, including the title bar. Switch back to the original monochrome look under Settings → **General → Appearance → Theme palette** ("Classic"); the choice persists.
-- **Native background switch** on the main conversation page: clears the fog / overlay and the translucent page surfaces in one click, while the composer and dialogs keep their readable surfaces.
-- **Sync desktop wallpaper**: read-only follow of the current desktop wallpaper (30 s polling, immediate on tab focus), rendered by type, with automatic multi-monitor resolution and a monitor picker. It never changes your desktop wallpaper and never samples the screen.
-- **Check for updates**: a button at the bottom of Settings → Wallpaper queries npm for the `latest` version (10-minute cache, falls back to a mirror when the official registry times out). It only compares version numbers — no download, install, or profile change — and links to the release notes when a newer version exists.
-- **Black-flash-free switching** with next-item warm-up: wallpaper changes cross-fade two stacked layers over ~0.42 s, and the next queue item is preloaded while the current one plays.
-- **Zero local rendering, zero cache files**: no `scene.pkg` parsing, no frame files, no MP4s, no screen sampling, no `~/.dsh-wallpaper-bg` folder.
+- **三种壁纸来源**：内置 10 张 Unsplash 高清图（网格缩略图与 1920w 背景都随包内置，离线可用），即装即用；自定义上传（本地图片 / 视频，存入 IndexedDB，视频自动生成首帧缩略图）；以及只读接入本机 **Wallpaper Engine** 已安装壁纸（装配套插件 [`dsh-wallpaper-engine-api`](https://github.com/nishuoyang/dsh-wallpaper-engine-api#readme) 后自动发现端口），按 Steam 真实订阅清单过滤。
+- **播放队列**：自定义上传与 WE 壁纸库各有独立队列，拖入壁纸循环播放，每张停留 1–10 分钟；支持拖拽排序、点选跳播、× 移除、清空，队列内容持久化到 localStorage，队列吸顶在页签顶部。
+- **四种渲染**：静态图片（cover 铺满）、视频（`<video object-fit: cover>`，GPU 合成缩放）、场景（WE 自带的工坊预览图 `preview.gif` / `preview.jpg`）、网页（iframe 原生渲染 `index.html`）。
+- **四项调节**：浅色雾层 / 深色遮罩（随 DSH 主题自动切换）、背景模糊度（0–20px）、背景亮度（50–150%）、安全放大（0–10%，裁掉边缘黑边）。
+- **统一蓝粉配色**：蔚蓝主色 + 玫粉高亮，覆盖主题色、半透明表面、按钮、文字、链接、蓝粉渐变滑杆、侧栏 logo、渐变滚动条、用户气泡；`dsh web` 与桌面端共用同一套令牌，桌面标题栏同步。设置 → **通用设置 → 外观 → 主题配色**可随时切回「经典」黑白主色，选择会持久化。
+- **原生背景开关**：设置 →「壁纸」面板的「外观」组一键清除雾层 / 遮罩与页面表面的半透明覆盖，露出完整壁纸，输入框和弹窗保持可读底色；关闭后恢复原数值。同一组里还能打开「在标题区显示快捷开关」，把胶囊开关放回聊天标题区（默认关闭）。
+- **同步桌面壁纸**：只读跟随当前桌面壁纸（30 秒轮询，切回 DSH 页签立即跟随），按类型渲染；多显示器自动判定并可在状态行手动指定。不修改桌面、不采样桌面画面。
+- **检查更新**：设置 → 壁纸面板底部一键查询 npm 上的 `latest` 版本（10 分钟缓存，官方源超时退国内镜像）；只比版本号，不下载、不安装、不改 profile，有新版时给发布说明链接。
+- **无黑屏切换 + 下一张预热**：换壁纸采用双层交叉淡入淡出（约 0.42 秒），切换全程有画面；队列播放时会提前把下一张拉好，到点几乎立刻开始叠化。
+- **零本地渲染、零缓存文件**：不解析 `scene.pkg`、不渲染场景帧、不烘焙视频、不采样桌面画面，不建 `~/.dsh-wallpaper-bg`、不落帧文件、不产 MP4。
 
-Full option-by-option reference: [Configuration](docs/configuration.md).
+逐项说明见 [配置说明](docs/configuration.md)。
 
-## Installation
+## 安装
 
-### Prerequisites
+### 前提条件
 
-- **DeepSeek Harness desktop app (0.2 preview or later; 0.2.1 verified)** — the app bundles its own Node.js / pnpm runtime, so nothing else is needed;
-- **or a CLI install** (`dsh web`) with Node.js ≥ 20 (`node -v`) and a working DeepSeek Harness;
-- the optional WE library source adds its own requirements (Windows, a local Wallpaper Engine install, and the `dsh-wallpaper-engine-api` companion plugin — one command, no clone / `npm install` / `.bat` / autostart) — see [WE library service](docs/we-library-service.md).
+- **DeepSeek Harness 桌面端（0.2 预览版或更新；0.2.1 已复核）**——桌面端自带 Node.js / pnpm 运行时，插件本体**无需自装 Node**；
+- **或者命令行方式**（`dsh web`）：Node.js ≥ 20（`node -v` 检查）+ 能正常启动的 DeepSeek Harness；
+- 可选的「WE 壁纸库」来源另有前提：Windows + 本机 Wallpaper Engine + 配套插件 `dsh-wallpaper-engine-api`（一条命令装好，不再需要 clone / `npm install` / `.bat` / 开机自启）。详见 [WE 壁纸库服务](docs/we-library-service.md)。
 
-### Desktop app (no command line)
+### 桌面端安装（无需命令行）
 
-1. Open **Settings → Plugins** (设置 → 插件) and type `dsh-wallpaper-bg` into the install box;
-2. Confirm, and restart the app (or reload the window) when it asks;
-3. Open **Settings → Wallpaper** (设置 → 壁纸) and pick a wallpaper.
+1. 打开**设置 → 插件**，在安装框里输入包名 `dsh-wallpaper-bg`；
+2. 确认安装，按应用提示**重启桌面端**（或重载窗口）；
+3. 打开**设置 → 壁纸**，挑一张壁纸即可。
 
-With the app's optional `dsh` command on PATH, the equivalent is:
+已把桌面端提供的 `dsh` 命令装进 PATH 时，等价命令是：
 
 ```bash
 dsh plugin --profile desktop add dsh-wallpaper-bg
 ```
 
-### CLI / browser (`dsh web`)
+### 命令行 / 网页版安装（`dsh web`）
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg
 ```
 
-From a checkout, link the repo instead: `dsh plugin --profile web add link:<absolute-path-to-repo>` (or `--profile desktop`).
+本地开发建议直接链接仓库：`dsh plugin --profile web add link:<仓库绝对路径>`（桌面端用 `--profile desktop`）。Windows 下仓库路径不能带空格。
 
-### Optional: WE library source (one command)
+### 可选：WE 壁纸库来源（一条命令）
 
-To use the **WE 壁纸库** tab, install the companion plugin too (Windows + a local Wallpaper Engine install):
+想用「WE 壁纸库」页签，再装配套插件即可（Windows + 本机已装 Wallpaper Engine）：
 
 ```bash
-dsh plugin --profile web add dsh-wallpaper-engine-api      # dsh web
-dsh plugin --profile desktop add dsh-wallpaper-engine-api  # desktop app (or type the package name in Settings → Plugins)
+dsh plugin --profile web add dsh-wallpaper-engine-api      # 网页版
+dsh plugin --profile desktop add dsh-wallpaper-engine-api  # 桌面端（或在 设置 → 插件 里填包名）
 ```
 
-It serves a read-only WE API on `127.0.0.1:8088` and follows the DSH lifecycle; the main plugin discovers the actual port through a same-origin status route. No repository clone, `npm install`, `.bat` launcher, or login autostart. The old [`wallpaper-engine-api`](https://github.com/nishuoyang/wallpaper-engine-api) service now lives in its own repository for manual installs; new users just install the plugin.
+它在本机 `127.0.0.1:8088` 启动只读 WE API，随 DSH 启停；主插件会通过同源状态路由自动发现实际端口。**不再需要** clone 仓库、`npm install`、双击 `.bat` 或设置开机自启。旧的 [`wallpaper-engine-api`](https://github.com/nishuoyang/wallpaper-engine-api) 服务已迁到独立仓库，供手动部署的用户使用；新用户装这个插件就行。
 
-### Upgrading
+### 升级（为什么只跑 `add` 不会升级）
 
-`dsh plugin … add` forwards to `pnpm add`, which keeps the range already recorded in the manifest — re-running the install command on an existing install changes nothing. Ask for a version explicitly:
+`dsh plugin … add` 转发给 `pnpm add`，而 pnpm 会保留 profile 清单里已有的版本范围，重复执行不会升级。要升级请显式指定版本：
 
 ```bash
-dsh plugin --profile web add dsh-wallpaper-bg@latest    # move to the newest release
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.19     # or pin an exact version
+dsh plugin --profile web add dsh-wallpaper-bg@latest    # 升到最新发布版
+dsh plugin --profile web add dsh-wallpaper-bg@0.5.20     # 或锁定某个具体版本
 ```
 
-> pnpm 11 installs a release only after it is a day old (24 h `minimumReleaseAge`), so a just-published version resolves to the previous one for roughly a day. Name the exact version to take it immediately.
+> pnpm 11 只安装「发布满一天」的版本（默认 24 小时 `minimumReleaseAge`），刚发布的版本约一天内只会解析到上一个版本；写死版本号即可立刻装上。
 
-Install, upgrade, local development and profile details: [Installation guide](docs/installation.md).
+安装、升级与本地开发的完整说明见 [安装指南](docs/installation.md)。
 
-## Quick start
+## 快速上手
 
 ```bash
-# 1. install into a profile
+# 1. 装进某个 profile
 dsh plugin --profile web add dsh-wallpaper-bg
 
-# 2. (optional) enable the WE library source
+# 2.（可选）想用 WE 壁纸库来源，再装配套插件
 dsh plugin --profile web add dsh-wallpaper-engine-api
 
-# 3. start DSH (desktop app: just open it)
+# 3. 启动 DSH（桌面端直接打开应用即可）
 dsh web
 ```
 
-1. Open **Settings → Wallpaper** (设置 → 壁纸).
-2. Pick a source tab — 内置壁纸 / 自定义上传 / WE 壁纸库 — and click a wallpaper to apply it; the background only changes on an explicit selection.
-3. Drag wallpapers into the queue to loop-play them, and use the sliders for fog / overlay, blur (0–20px), brightness (50–150%) and safe zoom (0–10%).
-4. (Optional) Toggle **同步桌面壁纸** to read-only follow the desktop wallpaper, or flip **Native background** in the main conversation header to reveal the wallpaper completely.
+1. 打开**设置 → 壁纸**。
+2. 选来源页签（内置壁纸 / 自定义上传 / WE 壁纸库），点选某张壁纸才应用背景——切换页签只换面板视图，不动背景。
+3. 把壁纸拖进队列即可循环播放；滑杆调节雾层 / 遮罩、模糊度（0–20px）、亮度（50–150%）与安全放大（0–10%）。
+4. 可选：打开**同步桌面壁纸**只读跟随桌面壁纸，或用同一面板「外观」组里的**原生背景**开关让壁纸完整透出。
 
-Verify the host half is mounted at `<DSH address>/dsh-wallpaper-bg/health`:
+确认宿主半已挂载：访问 `<DSH 地址>/dsh-wallpaper-bg/health`。
 
 ```
-http://127.0.0.1:3080/dsh-wallpaper-bg/health     # dsh web (default port 3080)
-http://127.0.0.1:19387/dsh-wallpaper-bg/health    # desktop app 0.2.0-rc.2 and earlier (fixed port)
-# desktop app 0.2.1+: the web server uses a random port; use the one printed in the
-# startup log as `dsh web: http://127.0.0.1:<port>/?token=...`
+http://127.0.0.1:3080/dsh-wallpaper-bg/health     # dsh web（默认端口 3080）
+http://127.0.0.1:19387/dsh-wallpaper-bg/health    # 桌面端 0.2.0-rc.2 及更早（固定端口）
+# 桌面端 0.2.1 起：Web 服务端口是随机的，以启动日志里 dsh web: http://127.0.0.1:<port>/?token=... 为准
 ```
 
-> The plugin also ships a `dsh-wallpaper-bg` CLI (`install` / `status` / `uninstall`) for one-command setup on a CLI install; it skips the `desktop` profile, which the Electron app owns.
+> 本包另附 `dsh-wallpaper-bg` CLI（`install` / `status` / `uninstall`），面向命令行部署一键安装；它会跳过归桌面端独占的 `desktop` profile。
 
-## Documentation
+## 文档
 
-| Topic | Document |
+| 主题 | 文档 |
 | --- | --- |
-| Install, upgrade, local development | [docs/installation.md](docs/installation.md) |
-| Every setting, queue and filter | [docs/configuration.md](docs/configuration.md) |
-| Optional WE library plugin `dsh-wallpaper-engine-api` | [docs/we-library-service.md](docs/we-library-service.md) · [plugin README](https://github.com/nishuoyang/dsh-wallpaper-engine-api#readme) |
-| Symptom → cause → fix | [docs/troubleshooting.md](docs/troubleshooting.md) |
-| How the two halves work | [docs/architecture.md](docs/architecture.md) |
-| Releasing (`scripts/release.ps1`) and CI workflows | [docs/releasing.md](docs/releasing.md) |
+| 安装、升级、本地开发 | [docs/installation.md](docs/installation.md) |
+| 设置面板逐项说明、队列、筛选 | [docs/configuration.md](docs/configuration.md) |
+| 可选组件：WE 壁纸库插件 `dsh-wallpaper-engine-api` | [docs/we-library-service.md](docs/we-library-service.md) · [插件 README](https://github.com/nishuoyang/dsh-wallpaper-engine-api#readme) |
+| 症状 → 原因 → 动作 | [docs/troubleshooting.md](docs/troubleshooting.md) |
+| 双半结构与路由原理 | [docs/architecture.md](docs/architecture.md) |
+| 发布流程（scripts/release.ps1）与 CI 工作流 | [docs/releasing.md](docs/releasing.md) |
 
-How it works, in one line: a DSH **static two-half plugin** — `lib/host.js` registers same-origin routes (`/dsh-wallpaper-bg/asset`, `/dsh-wallpaper-bg/we`, `/dsh-wallpaper-bg/health`, and auto-discovers the `dsh-wallpaper-engine-api` plugin's actual port), `lib/client.js` is a hand-written single-file browser bundle that injects the background layer and the 壁纸 settings tab, and `cordis.patch.yml` inserts the plugin row into the profile composition's host plane. Detail: [Architecture](docs/architecture.md).
+原理一句话：本包是 DSH **静态双半插件**，作为 profile 补丁层（bundle）组合进 host 平面——`lib/host.js` 注册同源路由（`/dsh-wallpaper-bg/asset`、`/dsh-wallpaper-bg/we`、`/dsh-wallpaper-bg/health`，并会自动发现 `dsh-wallpaper-engine-api` 插件的实际端口），`lib/client.js` 是手写的单文件浏览器 bundle，注入背景层与「壁纸」设置选项卡，`cordis.patch.yml` 把插件行插入 profile 组合，随 DSH 启动即生效。详见 [架构说明](docs/architecture.md)。
 
-## License
+## 开源
 
-MIT License, see [LICENSE](LICENSE). Issues / PRs welcome.
+MIT License，见 [LICENSE](LICENSE)。欢迎 issue / PR。

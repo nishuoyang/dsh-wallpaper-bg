@@ -22,7 +22,7 @@
 
 - [ ] Focused diff — unrelated changes are in a separate PR / 改动聚焦，无关修改另开 PR
 - [ ] `CHANGELOG.md` has an entry for user-visible changes (or this PR is docs/internal only) / 用户可见改动已写 CHANGELOG（或本 PR 只涉及文档/内部工具）
-- [ ] `README.md` and `README.zh.md` kept in sync / 中英文文档已同步
+- [ ] `README.md` and `README.en.md` kept in sync / 中英文文档已同步
 - [ ] Read-only promise preserved: no wallpaper changes, nothing written into the Wallpaper Engine install, service stays on `127.0.0.1` / 未破坏只读承诺
 - [ ] No `node_modules/`, `we-api.config`, `we-api.log` or caches committed / 没有提交 node_modules 与本机文件
 - [ ] Windows batch: `(` `)` inside `( ... )` blocks escaped as `^(` / `^)` / 批处理里的括号已转义

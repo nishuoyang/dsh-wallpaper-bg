@@ -2,7 +2,7 @@
 
 > 适用版本：插件 **0.5.18**（宿主半 `/dsh-wallpaper-bg/health` 里的 `version`）、可选配套插件 **dsh-wallpaper-engine-api 0.1.1**（同源 `/dsh-wallpaper-engine-api/status`）；旧的手动服务仍为 WE API **0.5.1**（`http://127.0.0.1:8088/health` 里的 `version`）。
 > **0.5.14 起，WE 壁纸库优先用配套插件**：`dsh plugin --profile <name> add dsh-wallpaper-engine-api`（或桌面端 设置 → 插件 填包名）。下文 §4.1–§4.12 里涉及 `wallpaper-engine-api/` 目录、`.bat`、开机自启、PATH 里的 Node.js 的步骤，只适用于**旧的手动部署**。
-> 本文只回答一个问题：**出状况时按什么顺序查、每一步对应什么动作**。功能说明与安装步骤见 [`README.zh.md`](../README.zh.md)（英文版 [`README.md`](../README.md)），逐版变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
+> 本文只回答一个问题：**出状况时按什么顺序查、每一步对应什么动作**。功能说明与安装步骤见 [`README.md`](../README.md)（英文版 [`README.en.md`](../README.en.md)），逐版变更见 [`CHANGELOG.md`](../CHANGELOG.md)。
 
 插件分两半，出问题时先分清是哪一半：
 
@@ -247,7 +247,9 @@ profile "desktop" is managed exclusively by the Electron application
 | --- | --- |
 | 细字更清楚 | 提高「浅色雾层」（浅色外观）或「深色遮罩」（深色外观）——两者随 DSH 主题自动切换，只需调当前主题那一个 |
 | 壁纸更清晰（少一层糊） | 降低「背景模糊度」；「背景亮度」调到接近 100% |
-| 壁纸完全露出来，界面表面不再半透明 | 主页面标题区的 **「原生背景」开关**：一次清掉雾层 / 遮罩与插件给界面表面加的半透明覆盖，输入框与弹窗仍保留可读底色；关掉即恢复原数值（开关状态会记住） |
+| 壁纸完全露出来，界面表面不再半透明 | 设置 →「壁纸」面板「外观」组里的 **「原生背景」开关**：一次清掉雾层 / 遮罩与插件给界面表面加的半透明覆盖，输入框与弹窗仍保留可读底色；关掉即恢复原数值（开关状态会记住） |
+| 第三方插件（如 dsh-lite-memory）的面板透明、文字和后面的聊天叠在一起 | 0.5.20 起会自动给这类弹窗恢复 DSH 原底色（页面本身仍透壁纸）；若仍异常，确认它是不是 `[role="dialog"]` 弹窗，而不是页面里内嵌的面板 |
+| 想保留标题区的一键切换 | 打开设置 →「壁纸」→「外观」里的 **「在标题区显示快捷开关」**（默认关闭）：标题区会常驻「原生背景」胶囊开关，与设置面板里的开关同步 |
 | 裁掉壁纸边缘的黑边 | 「安全放大」拉 1–3% |
 | 全部回到初始值 | 「恢复默认」 |
 
@@ -360,7 +362,7 @@ profile "desktop" is managed exclusively by the Electron application
 
 这是**桌面端 0.2.1 的窗口 chrome，不是插件的遮罩**：主窗口用 `titleBarStyle:"hidden"` + 40px `titleBarOverlay`，渲染进程的 preload 会用 `--dsw-specific-sidebar-fill` 采样标题栏底色，再经 `windowsAppearance` IPC 交给主进程。插件把该 token 改成半透明后，标题栏就变成「壁纸 × 侧栏色」——与侧栏、页面用同一套强度，所以看起来是一条半透明带，而不是纯壁纸。
 
-- 想让标题栏完全露出壁纸：打开主页面标题区的**「原生背景」**开关。该模式下 `--dsw-specific-sidebar-fill` 是 `transparent`，标题栏也会一起变透明（同时清掉雾层/遮罩与页面表面）。代价是标题栏右侧的最小化/最大化/关闭图标直接压在壁纸上，亮色壁纸下可读性会下降。
+- 想让标题栏完全露出壁纸：打开设置 →「壁纸」面板「外观」组里的**「原生背景」**开关。该模式下 `--dsw-specific-sidebar-fill` 是 `transparent`，标题栏也会一起变透明（同时清掉雾层/遮罩与页面表面）。代价是标题栏右侧的最小化/最大化/关闭图标直接压在壁纸上，亮色壁纸下可读性会下降。
 - 不要试图用 CSS 把标题栏单独改成不透明：`titleBarOverlay` 的颜色来自主进程采样，改页面样式只能改到下面那层 `::before`，两边会不同步。
 - 这不影响 macOS：macOS 用 `hiddenInset` + 系统红绿灯，没有这条 40px 带。
 
@@ -777,7 +779,7 @@ node .\bin\dsh-wallpaper-bg.js uninstall  # 卸载
 
 ## 附录 C · 相关文档
 
-- [`README.zh.md`](../README.zh.md) / [`README.md`](../README.md) —— 功能、安装、设置面板、常见问题（本文是它的排障展开版）
+- [`README.md`](../README.md) / [`README.en.md`](../README.en.md) —— 功能、安装、设置面板、常见问题（本文是它的排障展开版）
 - [`CHANGELOG.md`](../CHANGELOG.md) —— 每个版本修了什么、哪一版引入了什么行为（判断「是不是老版本的已知缺陷」）
 - [`CONTRIBUTING.md`](../CONTRIBUTING.md) —— 本地开发、测试脚本、批处理与脚本约定
 - [`SECURITY.md`](../SECURITY.md) —— 安全问题的私密报告入口与只读承诺

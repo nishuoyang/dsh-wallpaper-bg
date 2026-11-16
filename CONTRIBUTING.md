@@ -11,7 +11,7 @@ Thanks for your interest! This is a small, single-maintainer project — bug rep
 | **Bug report** | Use the [bug report form](.github/ISSUE_TEMPLATE/bug_report.yml). Environment details are usually what makes a bug reproducible. |
 | **Feature request** | Use the [feature request form](.github/ISSUE_TEMPLATE/feature_request.yml). Describing the problem you want solved helps more than the solution alone. |
 | **Pull request** | Small, focused diffs get reviewed and merged much faster. For anything large, open an issue first so we can agree on the approach before you write code. |
-| **Docs** | [`README.md`](README.md) (English) and [`README.zh.md`](README.zh.md) (Chinese) are kept in sync — please update both. |
+| **Docs** | [`README.md`](README.md) (Chinese) and [`README.en.md`](README.en.md) (English) are kept in sync — please update both. |
 
 Found a security problem? **Do not open a public issue** — see [`SECURITY.md`](SECURITY.md).
 
@@ -90,7 +90,7 @@ An interrupted run is resumed with `.\scripts\release.ps1 -Resume`. All flags ar
 - **报 bug** —— 用 [bug 模板](.github/ISSUE_TEMPLATE/bug_report.yml)，环境信息填得越全，定位越快。
 - **提需求** —— 用 [feature 模板](.github/ISSUE_TEMPLATE/feature_request.yml)，说清楚你想解决的问题，比直接给方案更有用。
 - **提 PR** —— 改动越小越聚焦，合得越快；要做大改动请先开 issue 对一下思路，别写完再返工。
-- **文档** —— [`README.md`](README.md)（英文）和 [`README.zh.md`](README.zh.md)（中文）要保持同步，改一个记得改另一个。
+- **文档** —— [`README.md`](README.md)（中文）和 [`README.en.md`](README.en.md)（英文）要保持同步，改一个记得改另一个。
 
 发现安全问题**不要**开公开 issue，走 [`SECURITY.md`](SECURITY.md)。参与本项目请遵守[行为准则](CODE_OF_CONDUCT.md)。
 
