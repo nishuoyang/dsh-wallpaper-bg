@@ -4,6 +4,17 @@
 
 > 发版时把下面的 `## [未发布]` 改成 `## [x.y.z] - YYYY-MM-DD`（`scripts/release.ps1` 要求存在对应版本条目）。
 
+## [0.5.21] - 2026-11-19
+
+### 修复
+
+- **点会话右侧详情栏的「全屏」后壁纸消失、背景变纯黑**（`lib/client.js`，[#5](https://github.com/nishuoyang/dsh-wallpaper-bg/issues/5)）：那颗 `⛶` 走的是**纯 CSS 布局态**（`[data-sidebar-right-panel="fullscreen"]`，面板 `width:100vw`），DSH 客户端从不调用 `requestFullscreen`，所以不是 Fullscreen API 的元素作用域问题。真实原因是壁纸作为 `z-index:-1` 的固定底层挂在 `#root` 之外，而面板链路（`[data-dockkit-surface]` / `-cell` / `-host` / `-pane` / `-empty`）自身带的底色会在整屏上叠起来，把壁纸压在下面。现在把这条链路自己的 `background-color` 清成 `transparent`，壁纸照常透出；卡片、终端、编辑器等内容画在自己的背景上，不受影响。
+
+### 文档
+
+- 新增 `docs/analysis-2026-11-19-issue5-panel-fullscreen.md`：issue #5 的完整根因分析（现象边界、被否定的 Fullscreen API 假设、真实成因链、验证命令、修复方案对比）。
+- `docs/troubleshooting.md` 新增 §3.15「点右侧详情栏的「全屏」后壁纸消失」；`docs/architecture.md` 补「右侧详情栏全屏」一段。
+
 ## [0.5.20] - 2026-11-16
 
 ### 变更

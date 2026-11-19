@@ -372,6 +372,14 @@ profile "desktop" is managed exclusively by the Electron application
 
 **0.5.15 已修**：壁纸解码后顺手缩一张 32×32 亮度图，按当前视口把可见裁剪区的均值积出来，反推雾层 / 遮罩的 alpha（最多补偿 ±22%）。只改一个 `background-color` 的 alpha，不碰壁纸像素、不加滤镜，画质与视频帧率不变。纯色壁纸补偿量为 0；视频 / 网页壁纸、跨域且无 CORS 头的图、「原生背景」模式自动不介入。
 
+### 3.15 点右侧详情栏的「全屏」后壁纸消失、背景变黑
+
+那颗 `⛶`（四角括号图标）**不是 Fullscreen API**：DSH 把它做成纯 CSS 布局态——给面板挂 `[data-sidebar-right-panel="fullscreen"]` 并把宽度撑到 `100vw`，`document.fullscreenElement` 全程是 `null`。所以「监听 `fullscreenchange`」「把壁纸层移进全屏元素」这类修法对它无效。
+
+**0.5.21 已修**：全屏时面板链路（`[data-dockkit-surface]` / `-cell` / `-host` / `-pane` / `-empty`）自身的底色会在整屏叠起来，把挂在 `#root` 之外、`z-index:-1` 的壁纸层盖住。现在这条链路自己的 `background-color` 被清成 `transparent`，壁纸照常透出；卡片、终端、编辑器等内容画在自己的背景上，不受影响。
+
+- 若升级后仍发黑：先刷新页面（客户端 bundle 有缓存），再到 DevTools 里确认 `document.fullscreenElement === null`、`getComputedStyle(document.querySelector('[data-dockkit-surface]')).backgroundColor` 是否已是 `rgba(0, 0, 0, 0)`；把这两个结果贴到 issue 里即可继续定位。
+
 ---
 
 ## 4. WE 壁纸库（可选）

@@ -52,6 +52,12 @@
 
 升级桌面端后，先复核这四处：`--dsw-specific-sidebar-fill` 是否仍是标题栏采样源、`body>:not(#root)` 规则是否还在、`[role=dialog]` 是否仍是设置弹窗宿主、`[data-composer-seat]` 是否还在（原生背景模式依赖它给输入框补半透明底色）。
 
+### 右侧详情栏「全屏」
+
+右栏顶部那颗 `⛶` 是**纯 CSS 布局态**，不是 Fullscreen API：面板被挂上 `[data-sidebar-right-panel="fullscreen"]` 并把宽度撑到 `100vw`，DSH 客户端全程不调用 `requestFullscreen`（`document.fullscreenElement` 一直是 `null`）。它和窗口全屏（`html[data-fullscreen]`，来自 preload 的 `dsh-desktop:window-fullscreen`）是两套完全不同的机制，别混用选择器。
+
+全屏时面板铺满视口，链路里每一层自带的底色（`[data-dockkit-surface]` / `-cell` / `-host` / `-pane` / `-empty`）都会叠在壁纸之上；插件在 `lib/client.js` 的 `CSS_TEXT` 末段把这条链路的 `background-color` 清成 `transparent`，壁纸才能照常透出。升级 DSH 后如果这些属性名变了，全屏会重新变黑——按 `docs/analysis-2026-11-19-issue5-panel-fullscreen.md` 的验证命令复查。
+
 ## 仓库结构速览
 
 | 路径 | 说明 |
