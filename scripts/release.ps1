@@ -452,11 +452,17 @@ if ($SkipGitHub) {
   try {
     $asset = $null
     if (-not $SkipNpm) {
-      # 用 --pack-destination 指定输出目录（不依赖 Push-Location）；失败时打印原因，
-      # 别像以前那样静默变成「Release 不带附件」。
-      $packOut = NpmQuiet @('pack', "$name@$target", '--pack-destination', $tmp)
-      if (-not $packOut.ok) { Warn "npm pack 失败：$($packOut.out)" }
-      $asset = Get-ChildItem $tmp -Filter '*.tgz' | Select-Object -First 1
+      # 在本地 checkout 上打包，**不要**写成 `npm pack "$name@$target"`：
+      # 后者会去 registry 下载 tarball，而刚 publish 完 tarball 端点比 packument 晚传播，
+      # 经常 404 —— 0.5.21 / 0.5.22 两次「Release 不带附件」都是这个 404，与网络无关。
+      # 本地打包的内容与刚发布的一致（同一份 checkout、同一个版本号），也不依赖任何网络。
+      $packOut = NpmQuiet @('pack', $repo, '--pack-destination', $tmp)
+      if (-not $packOut.ok) {
+        # 注意别只打印最后一行：Out-String 会按控制台宽度折行，末行可能只剩两个字符
+        # （实测打出过 "npm pack 失败：og"，就是 .log 路径被折行后的尾巴），排障要看全文。
+        Warn "npm pack 失败：$($packOut.lines -join ' | ')"
+      }
+      $asset = Get-ChildItem $tmp -Filter "$name-*.tgz" | Select-Object -First 1
       if ($asset) { Ok "已取得 npm 产物：$($asset.Name)（$([math]::Round($asset.Length / 1KB, 1)) KB）" }
       else { Warn '未能取得 npm 产物，Release 将不带附件' }
     } else {

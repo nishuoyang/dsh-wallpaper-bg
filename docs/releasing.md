@@ -24,6 +24,8 @@
 
 `npm publish` 成功后注册表要几分钟才可见（npm 自己会提示 "may take a few minutes"），所以脚本会轮询等待（`-NpmWaitSeconds`，默认 300 秒）而不是查一次就中断；等不到也只警告并继续发 GitHub Release，且 GitHub Release 这一步是幂等的（已存在就补传附件）。
 
+> Release 附带的 tarball 由**本地 checkout** 打包（`npm pack --pack-destination`），不回拉 registry：刚 publish 完的版本，tarball 端点常比 packument 晚传播，回拉会 404，Release 就变成「只有说明、没有附件」。0.5.21 / 0.5.22 两次都是这个原因，已在脚本里改掉。
+
 万一流程还是中断了，用 `-Resume` 续跑：它要求工作区干净、标签指向 HEAD，跳过已经成功的步骤（提交 / 打标签 / 推送 / 发布）只补剩下的。
 
 > 发版前请把 `CHANGELOG.md` 里的 `## [未发布]` 改成 `## [x.y.z] - YYYY-MM-DD`——脚本要求存在对应版本条目。
