@@ -4,6 +4,16 @@
 
 > 发版时把下面的 `## [未发布]` 改成 `## [x.y.z] - YYYY-MM-DD`（`scripts/release.ps1` 要求存在对应版本条目）。
 
+## [0.5.22] - 2026-11-20
+
+### 修复
+
+- **原生背景 + 打开设置页时，顶部 40px 标题栏比页面亮一倍、像贴在另一层上**（`lib/client.js`）：设置弹窗的遮罩写作 `inset:var(--dsh-frame-chrome-top,0px) 0 0`，DSH 有意让它从 Windows 原生标题栏之下开始（窗口全屏时该令牌本身就被置 0）。原生背景模式把 `--dsw-specific-sidebar-fill` 改成 `transparent` 后，那条 40px 带子成了整屏唯一既没被 `--dsw-alias-bg-mask-1` 压暗、也没被 `var(--dsw-mask-blur)` 模糊的区域——壁纸在 y=40 处亮度直接砍半（截图实测 169→84，比值 0.51）。现在弹窗期间把 `--dsh-frame-chrome-top` 归零，遮罩连标题栏一起压暗 + 模糊。该令牌只有这一个消费者（layout 只负责定义），影响面就是一个 mask；不支持 `:has()` 的内核整条规则丢弃、退回原行为。
+
+### 文档
+
+- `docs/troubleshooting.md` §3.13 补「弹窗遮罩为什么从 40px 起」与原生背景下的排查要点；`docs/architecture.md` 补「弹窗遮罩与 40px 标题栏」一段。
+
 ## [0.5.21] - 2026-11-19
 
 ### 修复

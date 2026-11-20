@@ -365,6 +365,8 @@ profile "desktop" is managed exclusively by the Electron application
 - 想让标题栏完全露出壁纸：打开设置 →「壁纸」面板「外观」组里的**「原生背景」**开关。该模式下 `--dsw-specific-sidebar-fill` 是 `transparent`，标题栏也会一起变透明（同时清掉雾层/遮罩与页面表面）。代价是标题栏右侧的最小化/最大化/关闭图标直接压在壁纸上，亮色壁纸下可读性会下降。
 - 不要试图用 CSS 把标题栏单独改成不透明：`titleBarOverlay` 的颜色来自主进程采样，改页面样式只能改到下面那层 `::before`，两边会不同步。
 - 这不影响 macOS：macOS 用 `hiddenInset` + 系统红绿灯，没有这条 40px 带。
+- **弹窗打开时，顶部 40px 那条带子会明显比页面亮**（原生背景模式下）：设置弹窗的遮罩写作 `inset:var(--dsh-frame-chrome-top,0px) 0 0`，DSH 有意让它从原生标题栏之下开始，所以那 40px 既不会被 `--dsw-alias-bg-mask-1` 压暗，也不会被 `var(--dsw-mask-blur)` 模糊。原生背景模式把 `--dsw-specific-sidebar-fill` 设成 `transparent` 后，带子露出的是**原始亮度、原始清晰度**的壁纸，和下方压暗 50% 的页面正好差出一倍（截图实测 y=40 上下亮度 169 → 84）。0.5.22 起弹窗期间把 `--dsh-frame-chrome-top` 归零，遮罩会连标题栏一起压暗 + 模糊；不支持 `:has()` 的内核退回原行为。
+- 这条带子本来就是**桌面端 0.2.1 的窗口 chrome**，不是插件的遮罩：插件只决定它的底色（原生背景 → 透明，普通模式 → 半透明侧栏色）。
 
 ### 3.14 窗口一缩小界面就略微变暗，拉回原尺寸又复原
 

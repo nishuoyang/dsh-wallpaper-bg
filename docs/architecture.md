@@ -58,6 +58,12 @@
 
 全屏时面板铺满视口，链路里每一层自带的底色（`[data-dockkit-surface]` / `-cell` / `-host` / `-pane` / `-empty`）都会叠在壁纸之上；插件在 `lib/client.js` 的 `CSS_TEXT` 末段把这条链路的 `background-color` 清成 `transparent`，壁纸才能照常透出。升级 DSH 后如果这些属性名变了，全屏会重新变黑——按 `docs/analysis-2026-11-19-issue5-panel-fullscreen.md` 的验证命令复查。
 
+### 弹窗遮罩与 40px 标题栏
+
+设置弹窗的遮罩（`.wCInkW_mask`）写作 `inset:var(--dsh-frame-chrome-top,0px) 0 0`：DSH 有意让它从 Windows 原生标题栏（40px）之下开始，窗口全屏（`html[data-fullscreen]`）时该令牌本身就被置 0。原生背景模式把 `--dsw-specific-sidebar-fill` 改成 `transparent` 之后，那条 40px 带子成为整屏唯一既没被 `--dsw-alias-bg-mask-1` 压暗、也没被 `var(--dsw-mask-blur)` 模糊的区域，壁纸于是在 y=40 处出现一倍的亮度台阶。
+
+插件在 `CSS_TEXT` 里给 `body[data-dshw-native-bg="true"]:has([role="dialog"][aria-modal="true"])` 设 `--dsh-frame-chrome-top:0px`，让遮罩一并盖住标题栏。这个令牌目前只有上述遮罩一个消费者（`dsh-client-ui-layout` 只负责在 `html` 上定义它），改它是安全的；如果以后 DSH 给别的浮层也接上它，需要重新评估。
+
 ## 仓库结构速览
 
 | 路径 | 说明 |
