@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-> v0.5.23 · MIT License
+> v1.0.0 · MIT License
 
 [![npm version](https://img.shields.io/npm/v/dsh-wallpaper-bg?label=npm&color=cb3837)](https://www.npmjs.com/package/dsh-wallpaper-bg)
 [![npm downloads](https://img.shields.io/npm/dm/dsh-wallpaper-bg?label=downloads)](https://www.npmjs.com/package/dsh-wallpaper-bg)
@@ -23,7 +23,7 @@
 - **播放队列**：自定义上传与 WE 壁纸库各有独立队列，拖入壁纸循环播放，每张停留 1–10 分钟；支持拖拽排序、点选跳播、× 移除、清空，队列内容持久化到 localStorage，队列吸顶在页签顶部。
 - **四种渲染**：静态图片（cover 铺满）、视频（`<video object-fit: cover>`，GPU 合成缩放）、场景（WE 自带的工坊预览图 `preview.gif` / `preview.jpg`）、网页（iframe 原生渲染 `index.html`）。
 - **四项调节**：浅色雾层 / 深色遮罩（随 DSH 主题自动切换）、背景模糊度（0–20px）、背景亮度（50–150%）、安全放大（0–10%，裁掉边缘黑边）。
-- **统一蓝粉配色**：蔚蓝主色 + 玫粉高亮，覆盖主题色、半透明表面、按钮、文字、链接、蓝粉渐变滑杆、侧栏 logo、渐变滚动条、用户气泡；`dsh web` 与桌面端共用同一套令牌，桌面标题栏同步。设置 → **通用设置 → 外观 → 主题配色**可随时切回「经典」黑白主色，选择会持久化。
+- **统一主题配色（蓝粉 / 紫青 / 琥珀）**：蔚蓝 + 玫粉，或暮紫 + 青绿；覆盖主题色、半透明表面、按钮、文字、链接、渐变滑杆、侧栏 logo、渐变滚动条、用户气泡；`dsh web` 与桌面端共用同一套令牌，桌面标题栏同步。设置 → **通用设置 → 外观 → 主题配色**可随时切回「经典」黑白主色，选择会持久化。
 - **原生背景开关**：设置 →「壁纸」面板的「外观」组一键清除雾层 / 遮罩与页面表面的半透明覆盖，露出完整壁纸，输入框和弹窗保持可读底色；关闭后恢复原数值。同一组里还能打开「在标题区显示快捷开关」，把胶囊开关放回聊天标题区（默认关闭）。
 - **同步桌面壁纸**：只读跟随当前桌面壁纸（30 秒轮询，切回 DSH 页签立即跟随），按类型渲染；多显示器自动判定并可在状态行手动指定。不修改桌面、不采样桌面画面。
 - **检查更新**：设置 → 壁纸面板底部一键查询 npm 上的 `latest` 版本（10 分钟缓存，官方源超时退国内镜像）；只比版本号，不下载、不安装、不改 profile，有新版时给发布说明链接。
@@ -77,7 +77,7 @@ dsh plugin --profile desktop add dsh-wallpaper-engine-api  # 桌面端（或在 
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg@latest    # 升到最新发布版
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.23     # 或锁定某个具体版本
+dsh plugin --profile web add dsh-wallpaper-bg@1.0.0     # 或锁定某个具体版本
 ```
 
 > pnpm 11 只安装「发布满一天」的版本（默认 24 小时 `minimumReleaseAge`），刚发布的版本约一天内只会解析到上一个版本；写死版本号即可立刻装上。

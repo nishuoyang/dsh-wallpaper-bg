@@ -1,6 +1,6 @@
 # dsh-wallpaper-bg
 
-> v0.5.23 · MIT License
+> v1.0.0 · MIT License
 
 [![npm version](https://img.shields.io/npm/v/dsh-wallpaper-bg?label=npm&color=cb3837)](https://www.npmjs.com/package/dsh-wallpaper-bg)
 [![npm downloads](https://img.shields.io/npm/dm/dsh-wallpaper-bg?label=downloads)](https://www.npmjs.com/package/dsh-wallpaper-bg)
@@ -23,7 +23,7 @@ A static two-half plugin that puts an **independent animated wallpaper layer** u
 - **Playback queue** per source: drag wallpapers into the queue and loop-play them at 1–10 minutes per item, with drag-to-reorder, click-to-jump and localStorage persistence. The queue is sticky at the top of its tab.
 - **Four render modes**: static images (cover-fit), videos (`<video object-fit: cover>`, GPU compositing), scene wallpapers (WE's own workshop preview `preview.gif` / `preview.jpg`), and web wallpapers (native iframe rendering of `index.html`).
 - **Four adjustments**: light fog / dark overlay (auto-switching with the DSH theme), background blur (0–20px), background brightness (50–150%), safe zoom (0–10% to crop edge letterboxing).
-- **Unified azure × rose palette** across theme colors, translucent surfaces, buttons, text, links, gradient sliders, the sidebar logo, gradient scrollbars and user bubbles — shared by `dsh web` and the desktop app, including the title bar. Switch back to the original monochrome look under Settings → **General → Appearance → Theme palette** ("Classic"); the choice persists.
+- **Unified theme palettes (azure × rose, violet × teal or amber × rose)** across theme colors, translucent surfaces, buttons, text, links, gradient sliders, the sidebar logo, gradient scrollbars and user bubbles — shared by `dsh web` and the desktop app, including the title bar. Switch back to the original monochrome look under Settings → **General → Appearance → Theme palette** ("Classic"); the choice persists.
 - **Native background switch** in Settings → Wallpaper → Appearance: clears the fog / overlay and the translucent page surfaces in one click, while the composer and dialogs keep their readable surfaces. The same group has an opt-in **header quick toggle** that puts the switch back in the conversation header (off by default).
 - **Sync desktop wallpaper**: read-only follow of the current desktop wallpaper (30 s polling, immediate on tab focus), rendered by type, with automatic multi-monitor resolution and a monitor picker. It never changes your desktop wallpaper and never samples the screen.
 - **Check for updates**: a button at the bottom of Settings → Wallpaper queries npm for the `latest` version (10-minute cache, falls back to a mirror when the official registry times out). It only compares version numbers — no download, install, or profile change — and links to the release notes when a newer version exists.
@@ -77,7 +77,7 @@ It serves a read-only WE API on `127.0.0.1:8088` and follows the DSH lifecycle; 
 
 ```bash
 dsh plugin --profile web add dsh-wallpaper-bg@latest    # move to the newest release
-dsh plugin --profile web add dsh-wallpaper-bg@0.5.23     # or pin an exact version
+dsh plugin --profile web add dsh-wallpaper-bg@1.0.0     # or pin an exact version
 ```
 
 > pnpm 11 installs a release only after it is a day old (24 h `minimumReleaseAge`), so a just-published version resolves to the previous one for roughly a day. Name the exact version to take it immediately.
